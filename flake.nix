@@ -124,7 +124,7 @@
         ];
 
         dockerImage = pkgs.dockerTools.buildLayeredImage {
-          name = "pldi25-argus";
+          name = "pldi25-argus-${builtins.elemAt (builtins.split "-" system) 0}";
           tag = "latest";
           fromImage = pkgs.dockerTools.pullImage (supported-images.${system});
 
