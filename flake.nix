@@ -7,7 +7,7 @@
       "github:cognitive-engineering-lab/depot?rev=3676b134767aba6a951ed5fdaa9e037255921475";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=b6ece7289e5a33fd8846e8828c6a5df7cfec98a1";
+      "github:cognitive-engineering-lab/argus?rev=1f754bde6af1686c4b892a936691ce563a56c7d8";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, depot-js, argus }:
@@ -35,7 +35,7 @@
         };
 
         inherit (argus.packages.${system}) argus-cli argus-ide argus-book;
-        toolchain = pkgs.rust-bin.fromRustupToolchainFile ./argus/rust-toolchain.toml;
+        toolchain = pkgs.rust-bin.fromRustupToolchainFile "${argus}/rust-toolchain.toml";
 
         host = "0.0.0.0";
         port = "8888";
@@ -82,22 +82,24 @@
           ];
         };
 
-        artifact-source = builtins.path {
-          name = "local-source";
-          path = ./.;
+        evaluation-source = builtins.path {
+          name = "evaluation-source";
+          path = ./evaluation;
         };
 
         dockerEnv = with pkgs; [
-          argus-cli
-          codium-with-argus
-          artifact-source
+          #argus-cli
+          #codium-with-argus
 
+          run-evaluation
           open-evaluation
           open-workspace
           open-tutorial
 
           pkg-config
           coreutils
+          binutils
+          gnused
           cacert
           gnugrep
 
@@ -105,20 +107,20 @@
           bashInteractive
           alsa-lib.dev
           udev.dev
+          libgudev
 
           # CLI DEPS
-          llvmPackages_latest.llvm
-          llvmPackages_latest.lld
+          gcc
           toolchain
           guile
           guile-json
           cargo-make
 
           # IDE DEPS
-          depot-js.packages.${system}.default
           nodejs_20
           pnpm_9
           biome
+          depot-js.packages.${system}.default
         ];
 
         dockerImage = pkgs.dockerTools.buildLayeredImage {
@@ -131,18 +133,26 @@
             paths = dockerEnv;
           };
 
+          extraCommands = ''
+            mkdir -p argus
+            mkdir -p evaluation
+            cp -R ${argus}/* argus/
+            cp -R ${evaluation-source}/* evaluation/
+          '';
+
           config = {
             Cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
             WorkingDir = "/";
             Env = with pkgs; [ 
-              "PATH=${builtins.concatStringsSep ":" (builtins.map (path: "${path}/bin") dockerEnv)}" 
+              "PATH=$PATH:${pkgs.lib.makeBinPath dockerEnv}:./argus/scripts" 
               "DISPLAY=:0"
               "HOST=${host}"
               "PORT=${port}"
               "PYTHON=${python3}"
-              "LIBERTINE_PATH=\"${libertine}/share/fonts\""
-              "RUSTC_LINKER=\"${llvmPackages.clangUseLLVM}/bin/clang\""
-              "PLAYWRIGHT_BROWSERS_PATH=\"${playwright-driver.browsers}\""
+              "LIBERTINE_PATH=${libertine}/share/fonts"
+              "PLAYWRIGHT_BROWSERS_PATH=${playwright-driver.browsers}"
+              "PKG_CONFIG_PATH=${alsa-lib.dev}/lib/pkgconfig"
+              "NODE_TLS_REJECT_UNAUTHORIZED=0"
             ];
             ExposedPorts."${port}/tcp" = {};
           };
@@ -152,17 +162,11 @@
 
         devShell = with pkgs; mkShell {
           nativeBuildInputs = [ pkg-config ];
-          buildInputs = dockerEnv ++ [
-            open-evaluation
-            open-workspace
-            argus-cli
-            codium-with-argus
-          ];
+          buildInputs = dockerEnv;
 
           ARGUS_IMAGE="${dockerImage}";
           PYTHON = python3;
           LIBERTINE_PATH = "${libertine}/share/fonts";
-          RUSTC_LINKER = "${llvmPackages.clangUseLLVM}/bin/clang";
           PLAYWRIGHT_BROWSERS_PATH="${playwright-driver.browsers}";
         };
       });
