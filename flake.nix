@@ -2,27 +2,54 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    argus.url = "github:cognitive-engineering-lab/argus?rev=4de7f3191c3fc59820dad1c78b60d6c06895fdf3";
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    depot-js.url = 
+      "github:cognitive-engineering-lab/depot?rev=3676b134767aba6a951ed5fdaa9e037255921475";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
+    argus.url = 
+      "github:cognitive-engineering-lab/argus?rev=b6ece7289e5a33fd8846e8828c6a5df7cfec98a1";
   };
 
-  outputs = { self, nixpkgs, flake-utils, argus, nix-vscode-extensions }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, depot-js, argus }:
+    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
-        overlays = [ nix-vscode-extensions.overlays.default ];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-          crossSystem = {
-            config = "x86_64-unknown-linux-gnu";
-            system = "x86_64-linux";
+        overlays = [ (import rust-overlay) nix-vscode-extensions.overlays.default ];
+        pkgs = import nixpkgs { inherit system overlays; };
+
+        supported-images = {
+          "x86_64-linux" = {
+            imageName = "ubuntu";
+            imageDigest = "sha256:e5a6aeef391a8a9bdaee3de6b28f393837c479d8217324a2340b64e45a81e0ef";
+            sha256 = "sha256-Tl83usHws5SLvtB7GhjvPFEybbRkHFGcQeMwKZFbHtI=";
+            finalImageTag = "20.04";
+            finalImageName = "ubuntu";
+          };
+
+          "aarch64-linux" = {
+            imageName = "ubuntu";
+            imageDigest = "sha256:4489868cec4ea83f1e2c8e9f493ac957ec1451a63428dbec12af2894e6da4429";
+            sha256 = "sha256-V54Rp/yS4VRC4KQb/rLXisk7963QlacM1t4x7NLIJ3M=";
+            finalImageTag = "20.04";
+            finalImageName = "ubuntu";
           };
         };
 
         inherit (argus.packages.${system}) argus-cli argus-ide argus-book;
+        toolchain = pkgs.rust-bin.fromRustupToolchainFile ./argus/rust-toolchain.toml;
+
+        host = "0.0.0.0";
+        port = "8888";
+
+        run-evaluation = pkgs.writeScriptBin "run-evaluation" ''
+          mkdir -p ./evaluation/data/gen
+          cd argus 
+          ARGUS_DNF_PERF= cargo test -p argus-cli
+          cargo make init-bindings
+          cargo make eval-all
+          mv *.csv ../evaluation/data/gen
+        '';
 
         open-evaluation = pkgs.writeScriptBin "open-evaluation" ''
-          #!${pkgs.runtimeShell}
-
           ${pkgs.julia-bin}/bin/julia -e '
             println("Setting up Pluto environment...")
 
@@ -33,18 +60,18 @@
             end
 
             using Pluto
-            println("Opening notebook: $(notebook_path)")
-            Pluto.run(notebook="./evaluation/notebook.jl")
+            Pluto.run(notebook="./evaluation/notebook.jl"; host="${host}", port=${port})
           '
         '';
 
         open-tutorial = pkgs.writeScriptBin "open-tutorial" ''
           cd ${argus-book}
-          ${pkgs.python3}/bin/python3 -m http.server
+          ${pkgs.python3}/bin/python3 -m http.server ${port}
         '';
 
         open-workspace = pkgs.writeScriptBin "open-workspace" ''
-          codium argus/examples/bevy/src/main.rs argus/examples/bevy
+          mkdir -p ~/root
+          codium --no-sandbox --user-data-dir=~/root argus/examples/bevy/src/main.rs argus/examples/bevy
         '';
 
         codium-with-argus = pkgs.vscode-with-extensions.override {
@@ -55,63 +82,69 @@
           ];
         };
 
-        argus-source = pkgs.fetchFromGitHub {
-          owner = "cognitive-engineering-lab";
-          repo = "argus";
-          # NOTE, should be the same as the `argus-pkgs` revision
-          rev = "4de7f3191c3fc59820dad1c78b60d6c06895fdf3";
-          sha256 = "sha256-NW+/h5wzn9afMoLt9ZKxnGn6Rszgamt4PhPFshSLCmw=";
-        };
-
-        local-source = builtins.path {
+        artifact-source = builtins.path {
           name = "local-source";
           path = ./.;
         };
 
-        artifact-source = pkgs.symlinkJoin {
-          name = "artifact-source";
-          paths = [ local-source argus-source ];
-        };
+        dockerEnv = with pkgs; [
+          argus-cli
+          codium-with-argus
+          artifact-source
+
+          open-evaluation
+          open-workspace
+          open-tutorial
+
+          pkg-config
+          coreutils
+          cacert
+          gnugrep
+
+          julia-bin
+          bashInteractive
+          alsa-lib.dev
+          udev.dev
+
+          # CLI DEPS
+          llvmPackages_latest.llvm
+          llvmPackages_latest.lld
+          toolchain
+          guile
+          guile-json
+          cargo-make
+
+          # IDE DEPS
+          depot-js.packages.${system}.default
+          nodejs_20
+          pnpm_9
+          biome
+        ];
 
         dockerImage = pkgs.dockerTools.buildLayeredImage {
           name = "pldi25-argus";
           tag = "latest";
-
-          fromImage = pkgs.dockerTools.pullImage {
-            imageName = "alpine";
-            imageDigest = "sha256:1de5eb4a9a6735adb46b2c9c88674c0cfba3444dd4ac2341b3babf1261700529";
-            sha256 = "sha256-6I6g8V5lwyPhiiw5qw9xgAjdwqBPhaYvuQgal3QOen0=";
-            finalImageTag = "3.21.3";
-            finalImageName = "alpine";
-          };
+          fromImage = pkgs.dockerTools.pullImage (supported-images.${system});
 
           contents = pkgs.buildEnv {
             name = "image-root";
-            paths = with pkgs; [
-              # Custom derivations
-              argus-cli
-              codium-with-argus
-              artifact-source
-
-              # Commands
-              open-evaluation
-              open-workspace
-              open-tutorial
-
-              # From pkgs
-              coreutils
-              cacert
-              julia-bin
-              bashInteractive
-            ];
+            paths = dockerEnv;
           };
 
           config = {
             Cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
             WorkingDir = "/";
-            Env = [
-              "PATH=${argus-cli}/bin:${codium-with-argus}/bin:${pkgs.bashInteractive}/bin:${pkgs.coreutils}/bin"
+            Env = with pkgs; [ 
+              "PATH=${builtins.concatStringsSep ":" (builtins.map (path: "${path}/bin") dockerEnv)}" 
+              "DISPLAY=:0"
+              "HOST=${host}"
+              "PORT=${port}"
+              "PYTHON=${python3}"
+              "LIBERTINE_PATH=\"${libertine}/share/fonts\""
+              "RUSTC_LINKER=\"${llvmPackages.clangUseLLVM}/bin/clang\""
+              "PLAYWRIGHT_BROWSERS_PATH=\"${playwright-driver.browsers}\""
             ];
+            ExposedPorts."${port}/tcp" = {};
           };
         };
       in {
@@ -119,25 +152,14 @@
 
         devShell = with pkgs; mkShell {
           nativeBuildInputs = [ pkg-config ];
-          buildInputs = [
+          buildInputs = dockerEnv ++ [
             open-evaluation
             open-workspace
             argus-cli
             codium-with-argus
-          ] ++ lib.optionals stdenv.isDarwin [
-            darwin.apple_sdk.frameworks.SystemConfiguration
-          ] ++ lib.optionals stdenv.isLinux [
-            alsa-lib.dev
-            udev.dev
           ];
 
-          shellHook = ''
-            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(rustc --print target-libdir)"
-            export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:$(rustc --print target-libdir)"
-          '';
-
-          IMAGE_PATH=dockerImage;
-
+          ARGUS_IMAGE="${dockerImage}";
           PYTHON = python3;
           LIBERTINE_PATH = "${libertine}/share/fonts";
           RUSTC_LINKER = "${llvmPackages.clangUseLLVM}/bin/clang";

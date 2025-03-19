@@ -357,6 +357,11 @@ Markdown.parse("""
 # User Study V`$version` (N=`$N`)
 """)
 
+# ╔═╡ 67277703-4a0b-4ffc-a00b-aec728b73f37
+md"""
+We recruited N = $N participants
+"""
+
 # ╔═╡ c13f6c71-1831-4d26-a726-f61b46ad7b78
 function report_min_max_median(v; title="Min/Max/Median")
 	m = median(v)
@@ -370,7 +375,7 @@ function report_min_max_median(v; title="Min/Max/Median")
 	- Min $mi
 	- Max $mx
 	""")
-end
+end; 
 
 # ╔═╡ aa687140-0390-444d-bca4-f35b995decb8
 report_min_max_median(all_tasks.years; title="Years Programming")
@@ -387,7 +392,7 @@ md"""
 """
 The participant IDs used for IRR.
 """
-IRR_IDS = [19, 74, 62, 38, 50]
+IRR_IDS = [19, 74, 62, 38, 50];
 
 # ╔═╡ ae17e013-c5fe-46b6-856a-a9e30ddeef89
 """
@@ -422,7 +427,7 @@ function compute_irr(; version=1)
 		corspearman=corspearman(gavins_irr.found_rc, wills_irr.found_rc),
 		meanad=StatsBase.meanad(gavins_irr.found_rc, wills_irr.found_rc)
 	)
-end
+end;
 
 # ╔═╡ 7d536e79-d41c-4797-9484-a68002fcf4c7
 IRR_RESULTS = compute_irr(version=1)
@@ -434,13 +439,11 @@ IRR_CORRELATION = IRR_RESULTS.corspearman
 IRR_MEANAD = IRR_RESULTS.meanad
 
 # ╔═╡ a37fc0b7-0a1a-456c-9b59-4429a8913afc
-Markdown.parse("""
-The inter-rater reliability results are computed by the function `compute_irr` above.
+md"""
+The inter-rater reliability correlation ρ=$IRR_CORRELATION as computed by the function `compute_irr` above. *(Hidden by default click the eye icon to the left of the cell to toggle visiblity.)*
 
-The correlation ρ=$IRR_CORRELATION
-
-The mean absolute difference *meanad*=$IRR_MEANAD
-""")
+The mean absolute difference *meanad*=$IRR_MEANAD seconds
+"""
 
 # ╔═╡ 37564825-7961-4ce0-9c23-1481a8c445c2
 md"""
@@ -474,8 +477,6 @@ end;
 # ╔═╡ 8a226c19-6749-44a8-99c1-1a5653dd41a2
 md"""
 ### Figure 10
-
-*Note,* the below figures are labeled as 9 and 10, but they're really all part of figure 10.
 """
 
 # ╔═╡ 773f817c-f1eb-4cfd-ae9a-61572b84911e
@@ -508,7 +509,7 @@ function fig9_a()
 	))
 
 	fig
-end
+end;
 
 # ╔═╡ 0db6734d-a0e8-4072-b3f6-7ebb602b8d02
 function fig9_b()
@@ -531,13 +532,13 @@ function fig9_b()
 	)
 	
 	fig
-end
+end;
 
 # ╔═╡ 6ad727af-d324-4cb0-97b9-f574a173c164
-FIG9_A = fig9_a()
+FIG10_C = fig9_a()
 
 # ╔═╡ d72fdc5d-fa81-4a70-9024-dd2d092c3fdd
-FIG9_B = fig9_b()
+FIG10_D = fig9_b()
 
 # ╔═╡ d7db3e77-236c-4d36-b7df-aeb136f16a1d
 function fig10_a()
@@ -568,7 +569,10 @@ function fig10_a()
 	))
 
 	fig
-end
+end;
+
+# ╔═╡ 07de8b5b-00b8-4150-9cb1-fc5557e8d648
+FIG10_A = fig10_a()
 
 # ╔═╡ 5dbb3baa-6178-4d6c-aa91-ecae89f4f6ac
 function fig10_b()
@@ -592,10 +596,7 @@ function fig10_b()
 	)
 
 	fig
-end
-
-# ╔═╡ 07de8b5b-00b8-4150-9cb1-fc5557e8d648
-FIG10_A = fig10_a()
+end;
 
 # ╔═╡ 84f54ff6-4ff3-4b32-be3b-6e4a6a9350cc
 FIG10_B = fig10_b()
@@ -636,15 +637,10 @@ function time_outcomes_latex(df; prefix="", percents=false)
 	\newcommand{\NoArgusCILo%$prefix}{%$no_argus_ci_lo}
 	\newcommand{\NoArgusCIHi%$prefix}{%$no_argus_ci_hi}
 	"""
-end
+end;
 
-# ╔═╡ 9840aae1-fcc0-41fd-b3e7-3c2e52d0571e
-md"""
----
-#### Localization rate
-
-with Argus 84%, without Argus 38%
-"""
+# ╔═╡ b3198067-2518-40cb-a2d6-c78ca87b54e8
+ChisqTest(freqtable(all_tasks.did_localize, all_tasks.has_argus))
 
 # ╔═╡ ad33d56d-c4eb-446e-94b2-0e1fde12433f
 LOCALIZE_OUTCOMES = outcome_probability(all_tasks, :did_localize)
@@ -652,11 +648,37 @@ LOCALIZE_OUTCOMES = outcome_probability(all_tasks, :did_localize)
 # ╔═╡ 9be26989-da51-476a-ba42-deb2e2c0d54c
 WITH_ARGUS_LOCALIZED_RATE = with_argus(LOCALIZE_OUTCOMES).percent[1]
 
+# ╔═╡ 28f17b18-f527-49e1-83f9-6962e688693a
+WITH_ARGUS_LOCALIZED_RATE_CI = with_argus(LOCALIZE_OUTCOMES).confint[1]
+
 # ╔═╡ 4142602d-c97e-474c-95fb-628e7d821fcc
 NO_ARGUS_LOCALIZED_RATE = no_argus(LOCALIZE_OUTCOMES).percent[1]
 
+# ╔═╡ cf3a3688-26f7-4870-86e7-06266ccd27ef
+NO_ARGUS_LOCALIZED_RATE_CI = no_argus(LOCALIZE_OUTCOMES).confint[1]
+
+# ╔═╡ 8ebdbc8c-4b63-40ba-99fa-868196785854
+LOCALIZED_PP = WITH_ARGUS_LOCALIZED_RATE - NO_ARGUS_LOCALIZED_RATE
+
 # ╔═╡ 4e9ed283-274c-4d43-9d99-ebf90ab67501
 LOCALIZED_RATE_FACTOR = (WITH_ARGUS_LOCALIZED_RATE / NO_ARGUS_LOCALIZED_RATE) |> v -> round(v, sigdigits=2)
+
+# ╔═╡ 9840aae1-fcc0-41fd-b3e7-3c2e52d0571e
+md"""
+#### Localization rate
+
+- Localization with Argus
+
+  $WITH_ARGUS_LOCALIZED_RATE (CI = $WITH_ARGUS_LOCALIZED_RATE_CI)
+
+- Localization without Argus
+
+  $NO_ARGUS_LOCALIZED_RATE (CI = $NO_ARGUS_LOCALIZED_RATE_CI)
+
+A difference of $LOCALIZED_PP pp or $LOCALIZED_RATE_FACTOR x.
+
+Using the below Chi-square test, this effect is statistically significant. *(X(1, 100) = 22.236233 shown below under `Details`)*
+"""
 
 # ╔═╡ 4b690c44-0cdc-41aa-b22d-3b4c4878a31f
 L"""
@@ -666,19 +688,14 @@ L"""
 # ╔═╡ 0111bedd-7c8c-419e-aafc-e7b3181dab1a
 time_outcomes_latex(LOCALIZE_OUTCOMES; prefix="Localize", percents=true) |> println
 
-# ╔═╡ b3198067-2518-40cb-a2d6-c78ca87b54e8
-ChisqTest(freqtable(all_tasks.did_localize, all_tasks.has_argus))
-
 # ╔═╡ ec41ea88-708e-4b0a-a995-5f4f356b1f18
 md"""
 ---
 #### Localization times
 """
 
-# ╔═╡ 41d674c9-2cf5-43c8-887c-19b2caf10321
-md"""
-Median localization time with Argus
-"""
+# ╔═╡ c85e3b88-aeef-447c-b47e-7e6660d9c8ca
+KruskalWallisTest(with_argus(all_tasks).localizedint, no_argus(all_tasks).localizedint)
 
 # ╔═╡ 5d095859-f032-4b8c-bfc1-441c91ec7fb8
 WITH_ARGUS_LOCALISED_MD = with_argus(all_tasks).localizedint |> median |> round |> s -> canonicalize(Second(s))
@@ -705,32 +722,30 @@ TIMES_LOC = (
 	(no_argus(all_tasks).localizedint |> median) / (with_argus(all_tasks).localizedint |> median)
 ) |> d -> round(d, sigdigits=2)
 
+# ╔═╡ 41d674c9-2cf5-43c8-887c-19b2caf10321
+md"""
+- Localization time with Argus
+
+  median $WITH_ARGUS_LOCALISED_MD (CI = $WITH_ARGUS_LOCALIZED_CI)
+
+- Localization time without Argus
+
+  median $NO_ARGUS_LOCALIZED_MD (CI = $NO_ARGUS_LOCALIZED_CI)
+
+Difference of $LOCALIZED_DIFF pp or $TIMES_LOC x
+
+Using a Kruskal-Wallis test this effect is statistically significat *(X(1, 100) = 31.3892 shown below under `Details`.)*
+"""
+
 # ╔═╡ 7241f6dd-43d8-438a-bc2b-7515c0f7b7cc
 L"""
 \newcommand{\LocalizedTimeFactor}{$%$TIMES_LOC\times$}
 """ |> println
 
-# ╔═╡ c85e3b88-aeef-447c-b47e-7e6660d9c8ca
-KruskalWallisTest(with_argus(all_tasks).localizedint, no_argus(all_tasks).localizedint)
-
 # ╔═╡ 48384a51-2f58-4d94-893f-9cab73d29789
 md"""
 ---
 #### Fix Rate
-"""
-
-# ╔═╡ 769382aa-3666-402a-a6c8-5b934ce6c69d
-FIX_RATE = outcome_probability(all_tasks, :is_success)
-
-# ╔═╡ 0d460887-d910-4b05-aea8-d24f390e4833
-time_outcomes_latex(FIX_RATE; prefix="Fix", percents=true) |> println
-
-# ╔═╡ 4376aecc-078e-4c20-ab4f-1bd0843dea07
-ChisqTest(freqtable(all_tasks.is_success, all_tasks.has_argus))
-
-# ╔═╡ ecbe31c7-84ab-486d-8277-648edc4ff0ac
-md"""
-Mixed model analysis
 """
 
 # ╔═╡ 10487a7f-1ef4-496e-a48f-1149a1c0cf08
@@ -741,11 +756,55 @@ fit(
     Binomial(),
 )
 
+# ╔═╡ 769382aa-3666-402a-a6c8-5b934ce6c69d
+FIX_RATE = outcome_probability(all_tasks, :is_success)
+
+# ╔═╡ 8f6826a5-b8f9-40b4-a793-a67028c6dea5
+WITH_ARGUS_FIX_RATE = with_argus(FIX_RATE).percent[1]
+
+# ╔═╡ e8ed396a-a0a3-4080-9cf5-0b5402253cb5
+WITH_ARGUS_FIX_CI = with_argus(FIX_RATE).confint[1]
+
+# ╔═╡ 4c0fcdf3-4df4-463b-ab53-538e9c3fd9f9
+NO_ARGUS_FIX_RATE = no_argus(FIX_RATE).percent[1]
+
+# ╔═╡ e183e449-d112-4317-b987-84f5980cfc65
+NO_ARGUS_FIX_CI = no_argus(FIX_RATE).confint[1]
+
+# ╔═╡ 646d39a4-b107-4b6b-b667-842bcd25e502
+FIX_RATE_PP = WITH_ARGUS_FIX_RATE - NO_ARGUS_FIX_RATE
+
+# ╔═╡ 10d48fb5-d1f1-4cb3-8087-368e42cf8bf6
+TIMES_FIX = (WITH_ARGUS_FIX_RATE / NO_ARGUS_FIX_RATE) |> v -> round(v, sigdigits=2)
+
+# ╔═╡ 00deb41f-ddd5-4e8a-8e66-ed640f9e0e15
+md"""
+- With Argus fix rate
+
+  $WITH_ARGUS_FIX_RATE (CI = $WITH_ARGUS_FIX_CI)
+
+- Without Argus fix rate 
+  $NO_ARGUS_FIX_RATE (CI = $NO_ARGUS_FIX_CI)
+
+A difference of $FIX_RATE_PP pp or $TIMES_FIX x.
+
+Using a mixed-effects generalized linear model (to account for within-subjects design), the effect is statistically significant. *p = 0.0262* (Shown below at the intersectino of `has_argus` and `p`.)
+"""
+
+# ╔═╡ 0d460887-d910-4b05-aea8-d24f390e4833
+time_outcomes_latex(FIX_RATE; prefix="Fix", percents=true) |> println
+
+# ╔═╡ 4376aecc-078e-4c20-ab4f-1bd0843dea07
+ChisqTest(freqtable(all_tasks.is_success, all_tasks.has_argus))
+
 # ╔═╡ 522e5282-712f-4d80-a379-08ed015c8610
 md"""
 ---
 #### Fix Times
 """
+
+# ╔═╡ 77d5226d-0759-4133-b934-9155c4499b20
+KruskalWallisTest(with_argus(all_tasks).durationint, no_argus(all_tasks).durationint)
 
 # ╔═╡ b0aece7e-c7ef-404c-bab4-69b1cf85fb3e
 WITH_ARGUS_FIX_MD = with_argus(all_tasks).durationint |> median |> round |> s -> canonicalize(Second(s))
@@ -761,8 +820,28 @@ NO_ARGUS_FIX_MD = no_argus(all_tasks).durationint |> median |> round |> s -> can
 # ╔═╡ 24e8ebf2-43a3-42d7-a4d9-6938e4804caa
 NO_ARGUS_FIXED_CI = SignTest(no_argus(all_tasks).durationint) |> confint |> t -> map(s -> canonicalize(Second(s)), t)
 
-# ╔═╡ 77d5226d-0759-4133-b934-9155c4499b20
-KruskalWallisTest(with_argus(all_tasks).durationint, no_argus(all_tasks).durationint)
+# ╔═╡ 6bf1d725-d99c-4871-8c16-cc258839bd04
+FIXED_DIFF = NO_ARGUS_FIX_MD - WITH_ARGUS_FIX_MD
+
+# ╔═╡ b001acee-0b60-4904-b62b-c9e5a7b4d74f
+TIMES_FIXED = (
+	Dates.toms(NO_ARGUS_FIX_MD) / Dates.toms(WITH_ARGUS_FIX_MD)
+) |> v -> round(v, sigdigits=2)
+
+# ╔═╡ cda4f21e-44a5-43d7-9052-5d7be025d2cd
+md"""
+- With Argus fix times 
+
+  $WITH_ARGUS_FIX_MD (CI = $WITH_ARGUS_FIXED_CI)
+
+- Without Argus fix times
+
+  $NO_ARGUS_FIX_MD (CI = $NO_ARGUS_FIXED_CI)
+
+A difference of $FIXED_DIFF pp or $TIMES_FIXED x
+
+Using a Kruskal-Wallis test, this effect is statistically significant *(X(1, 100) = 5.04327 shown under `Details`.)*
+"""
 
 # ╔═╡ 2443a333-e6e6-4550-8a62-6c7a546d3380
 md"""
@@ -774,11 +853,11 @@ md"""
 ### 5.2.2. Results
 """
 
-# ╔═╡ 73930689-cea1-4319-b30d-c2f6b04f5859
-precision_results = (
+# ╔═╡ 56a2e8cb-eee7-4427-a9c2-a53baac7b794
+read_precision_data(prefix="data/") = (
 		map(
 			s -> begin 
-				nm = @sprintf("./data/heuristic-precision[%s].csv", s)
+				nm = @sprintf("./%sheuristic-precision[%s].csv", prefix, s)
 				df = CSV.read(nm, DataFrame)
 				df.strategy .= s
 				df
@@ -788,16 +867,18 @@ precision_results = (
 		|> dfs -> reduce(vcat, dfs)
 		|> mp(:filename, (s -> split(s, "/") |> last))
 		|> pipe(Cols(:workspace, :filename) => ByRow((s1, s2) -> s1 * "/" * s2) => :name)
-	);
+);
 
-# ╔═╡ 10cd0beb-46de-45e5-b2f3-cc0714471ec0
-dnf_performance_results = CSV.read("./data/dnf-perf.csv", DataFrame);
+# ╔═╡ c13826e8-2230-4d06-90f7-769d95360451
+read_performance_data(prefix="data/") = (
+	CSV.read(@sprintf("./%sdnf-perf.csv", prefix), DataFrame)
+)
 
-# ╔═╡ c4eb217b-81d7-4128-8e21-935475f72214
-md"""
-#### Heuristic “Precision”
-The median distance for each evaluation approach (inertia, depth, ty vars, rust).
-"""
+# ╔═╡ bff76e5a-c9d5-4051-8ffc-e0ddb7423a5b
+precision_results = read_precision_data();
+
+# ╔═╡ 4f6da2c6-ffc3-4684-8b32-1f576fa785c0
+dnf_performance_results = read_performance_data();
 
 # ╔═╡ 08cc6777-c9b0-410b-bc55-cceb99015cb9
 function strategy_median(s)
@@ -805,48 +886,62 @@ function strategy_median(s)
 end;
 
 # ╔═╡ f3e6e227-9849-41fd-b99f-3c95868b4ad2
-strategy_median(:inertia)
+INERTIA_MD = strategy_median(:inertia)
 
 # ╔═╡ f6f691e2-14c3-4483-b822-ee3a746271bc
-strategy_median(:depth)
+DEPTH_MD = strategy_median(:depth)
 
 # ╔═╡ 477c8a45-063b-4e96-8a60-db99dee9ec5d
-strategy_median(:vars)
+VARS_MD = strategy_median(:vars)
 
 # ╔═╡ 873f7287-5a3c-4253-8979-71e4bb1fe9a0
-strategy_median(:rust)
+RUST_MD = strategy_median(:rust)
 
-# ╔═╡ 8901d2db-09a8-4a5b-bd2e-8ee8428f4cb2
+# ╔═╡ c4eb217b-81d7-4128-8e21-935475f72214
 md"""
-Inference tree size (median, minimum, maximum)
+#### Heuristic “Precision”
+
+- Inertia median distance $INERTIA_MD
+- Predicate depth median distance $DEPTH_MD
+- Inference vars median distance $VARS_MD
+- Rust diagnostic median distance $RUST_MD
 """
 
 # ╔═╡ bcc4a4b9-ee24-4982-bae3-37f39e54a3d1
-dnf_performance_results.N |> median
+DNF_TREE_MD = dnf_performance_results.N |> median
 
 # ╔═╡ 1d766cbb-82f5-4f36-b023-258823bd663b
-dnf_performance_results.N |> minimum
+DNF_TREE_MIN = dnf_performance_results.N |> minimum
 
 # ╔═╡ 39a8c949-a9fc-4b91-91c0-f0d772484c50
-dnf_performance_results.N |> maximum
+DNF_TREE_MAX = dnf_performance_results.N |> maximum
+
+# ╔═╡ 8901d2db-09a8-4a5b-bd2e-8ee8428f4cb2
+md"""
+- Inference tree median size $DNF_TREE_MD
+- Inference tree min size $DNF_TREE_MIN
+- Inference tree max size $DNF_TREE_MAX
+"""
+
+# ╔═╡ 767f035d-fa4b-4099-9e37-cd85e9a0d83f
+DNF_NORM_MD = dnf_performance_results.Time |> median |> s -> s * 1000
+
+# ╔═╡ 77d700c2-555a-4793-9920-4e0778722fe7
+DNF_NORM_MIN = dnf_performance_results.Time |> minimum |> s -> s * 1000
+
+# ╔═╡ 78cfc659-4925-42d5-9e25-4250cb956d3c
+DNF_NORM_MAX = dnf_performance_results.Time |> maximum |> s -> s * 1000
 
 # ╔═╡ 00a88397-7168-47bf-a53d-794577dd490f
 md"""
-Normalization times for the trait inference tree (median, minimum, maximum). 
+- Normalization median (*ms*) $DNF_NORM_MD
+- Minimum $DNF_NORM_MIN
+- Maximum $DNF_NORM_MAX
 
 *Note, these times were gathered by running the Argus tool on the test suite. Tests run on a 2023 MacBook Pro M3 Pro laptop.*
 
 Numbers below are in **milliseconds**.
 """
-
-# ╔═╡ 767f035d-fa4b-4099-9e37-cd85e9a0d83f
-dnf_performance_results.Time |> median |> s -> s * 1000
-
-# ╔═╡ 77d700c2-555a-4793-9920-4e0778722fe7
-dnf_performance_results.Time |> minimum |> s -> s * 1000
-
-# ╔═╡ 78cfc659-4925-42d5-9e25-4250cb956d3c
-dnf_performance_results.Time |> maximum |> s -> s * 1000
 
 # ╔═╡ 6ba89644-0486-4334-bb1f-1907e69ec927
 md"""
@@ -854,8 +949,7 @@ md"""
 """
 
 # ╔═╡ 97ef8fea-d22a-4929-a975-a69690cdfac5
-function fig11_a() 
-	df = precision_results
+function fig11_a(df = precision_results) 
 
 	fig = Figure()
 
@@ -877,12 +971,12 @@ function fig11_a()
 		)
 	)
 	fig
-end
+end;
 
 # ╔═╡ 68ad58b0-c6e4-4609-b29a-fe594b37e6f9
-function fig11_b()	
+function fig11_b(df = dnf_performance_results)	
 	draw(
-		agdata(dnf_performance_results) * 
+		agdata(df) * 
 		mapping(
 			:N => "Number of Tree Nodes (N)",
 			:Time => (v -> v * 1000) => "Time (ms)",
@@ -894,7 +988,17 @@ function fig11_b()
         	topspinevisible = false
 		)
 	)
-end
+end;
+
+# ╔═╡ c44c1a73-3ce3-48ca-9108-4657654405a5
+md"""
+*Note to reviewers, Figure 11 (a) in the submitted PDF contains only a single yellow triangle for the inertia heuristic. The final paper will contain all data points but grouped a tighter.*
+"""
+
+# ╔═╡ bfc8ba94-4b00-4440-b3c6-3f322749f6c8
+md"""
+**These figures use the data included in the artifact submission.** If you previously ran the command `generate-data`, there will be two graphs below for comparison.
+"""
 
 # ╔═╡ 9b0bb6c2-7df2-4030-9039-a1e65af46825
 FIG11_A = fig11_a()
@@ -902,7 +1006,34 @@ FIG11_A = fig11_a()
 # ╔═╡ 683328c8-40f1-4b4b-bc99-9ea316fb51be
 FIG11_B = fig11_b()
 
-# ╔═╡ aa8c9f5b-de4f-478a-9236-c0286bc8003c
+# ╔═╡ 2a194322-6246-4ede-9e41-30fffaa7765b
+md"""
+#### Figure 11 with data run locally.
+"""
+
+# ╔═╡ 5feec8d9-c530-474d-8c42-e1949f439cfb
+if isdir("data/gen") 
+  fig11_a(read_precision_data("data/gen/"))
+else
+  md"""
+  To view Figure 11 (a) with data generated locally, run the `run-evaluation` command.
+
+  *Nothing to show*
+  """
+end
+
+# ╔═╡ 289db6e8-79e5-4ef5-945f-ba29b8e0a5d9
+if isdir("data/gen") 
+  fig11_b(read_performance_data("data/gen/"))
+else
+  md"""
+  To view Figure 11 (b) with data generated locally, run the `run-evaluation` command.
+
+  *Nothing to show*
+  """
+end
+
+# ╔═╡ 950f0381-87cd-4851-ae97-278c1a428da4
 md"""
 ---
 """
@@ -912,10 +1043,10 @@ md"""
 Export all of the figures in this notebook to the `./figs` directory.
 """
 function export_figures()
-	save("./figs/Fig9_a.pdf", FIG9_A, px_per_unit = 2)
-	save("./figs/Fig9_b.pdf", FIG9_B, px_per_unit = 2)
 	save("./figs/Fig10_a.pdf", FIG10_A, px_per_unit = 2)
 	save("./figs/Fig10_b.pdf", FIG10_B, px_per_unit = 2)
+	save("./figs/Fig10_c.pdf", FIG10_C, px_per_unit = 2)
+	save("./figs/Fig10_d.pdf", FIG10_D, px_per_unit = 2)
 	save("./figs/Fig11_a.pdf", FIG11_A, px_per_unit = 2)
 	save("./figs/Fig11_b.pdf", FIG11_B, px_per_unit = 2)
 end
@@ -3059,7 +3190,7 @@ version = "3.6.0+0"
 # ╟─6fa2360d-cae0-4d1d-83fb-9cca1d471514
 # ╟─09b57e4d-7400-47ee-9981-f6f39eb128f1
 # ╟─28aa8578-f4c1-4215-9fab-e44193073dba
-# ╟─abc0d0ea-27e6-4bad-bc95-9d6539ab4f44
+# ╠═abc0d0ea-27e6-4bad-bc95-9d6539ab4f44
 # ╟─60e21bd4-779e-440b-8a7a-805eca8690c5
 # ╟─f1ffa2d0-0449-4f28-af5e-25399e5eef99
 # ╟─69a74948-61ff-498b-a6e5-260a3c40d2b0
@@ -3085,6 +3216,7 @@ version = "3.6.0+0"
 # ╟─1cd020b9-dd14-42ce-8dbc-59a3ff3377e6
 # ╟─d555960f-0147-478d-8b94-da0880e40ae2
 # ╟─7f4591ea-ec7a-4d9a-a421-20fb4b8b977a
+# ╟─67277703-4a0b-4ffc-a00b-aec728b73f37
 # ╟─c13f6c71-1831-4d26-a726-f61b46ad7b78
 # ╟─aa687140-0390-444d-bca4-f35b995decb8
 # ╟─b938307f-1431-4062-8f21-f1d839de3aab
@@ -3095,30 +3227,34 @@ version = "3.6.0+0"
 # ╟─7d536e79-d41c-4797-9484-a68002fcf4c7
 # ╟─aff33a67-33d6-4538-b797-a517d3346507
 # ╟─f63d0de8-681e-4f79-b73e-9dd6bb765715
-# ╠═37564825-7961-4ce0-9c23-1481a8c445c2
+# ╟─37564825-7961-4ce0-9c23-1481a8c445c2
 # ╟─9e5c5e5e-aef7-4159-ab87-999d16a8279f
 # ╟─8a226c19-6749-44a8-99c1-1a5653dd41a2
 # ╟─773f817c-f1eb-4cfd-ae9a-61572b84911e
 # ╟─0db6734d-a0e8-4072-b3f6-7ebb602b8d02
+# ╟─07de8b5b-00b8-4150-9cb1-fc5557e8d648
+# ╟─84f54ff6-4ff3-4b32-be3b-6e4a6a9350cc
 # ╟─6ad727af-d324-4cb0-97b9-f574a173c164
 # ╟─d72fdc5d-fa81-4a70-9024-dd2d092c3fdd
 # ╟─d7db3e77-236c-4d36-b7df-aeb136f16a1d
 # ╟─5dbb3baa-6178-4d6c-aa91-ecae89f4f6ac
-# ╠═07de8b5b-00b8-4150-9cb1-fc5557e8d648
-# ╠═84f54ff6-4ff3-4b32-be3b-6e4a6a9350cc
 # ╟─f2d58bb1-39e4-49f1-baa6-e2c8ac7979c2
 # ╟─23ac280a-d127-4dd7-812b-f7c4b07ee28d
 # ╟─22fe4993-0efa-4cbe-8ff3-4354d3c3378e
 # ╟─9840aae1-fcc0-41fd-b3e7-3c2e52d0571e
+# ╠═b3198067-2518-40cb-a2d6-c78ca87b54e8
 # ╠═ad33d56d-c4eb-446e-94b2-0e1fde12433f
 # ╠═9be26989-da51-476a-ba42-deb2e2c0d54c
+# ╠═28f17b18-f527-49e1-83f9-6962e688693a
 # ╠═4142602d-c97e-474c-95fb-628e7d821fcc
+# ╠═cf3a3688-26f7-4870-86e7-06266ccd27ef
+# ╠═8ebdbc8c-4b63-40ba-99fa-868196785854
 # ╠═4e9ed283-274c-4d43-9d99-ebf90ab67501
 # ╠═4b690c44-0cdc-41aa-b22d-3b4c4878a31f
 # ╠═0111bedd-7c8c-419e-aafc-e7b3181dab1a
-# ╠═b3198067-2518-40cb-a2d6-c78ca87b54e8
 # ╟─ec41ea88-708e-4b0a-a995-5f4f356b1f18
-# ╟─41d674c9-2cf5-43c8-887c-19b2caf10321
+# ╠═41d674c9-2cf5-43c8-887c-19b2caf10321
+# ╠═c85e3b88-aeef-447c-b47e-7e6660d9c8ca
 # ╟─5d095859-f032-4b8c-bfc1-441c91ec7fb8
 # ╟─271eea30-91c6-4204-9958-e59b241f355a
 # ╟─922bc3cc-e4b8-4073-87c1-a2d101c7eed5
@@ -3127,43 +3263,58 @@ version = "3.6.0+0"
 # ╟─1901b368-a426-4027-92e7-e0942abd9e82
 # ╟─5b0ce1fb-ca29-497f-be42-c5e1a2462eaa
 # ╠═7241f6dd-43d8-438a-bc2b-7515c0f7b7cc
-# ╠═c85e3b88-aeef-447c-b47e-7e6660d9c8ca
 # ╟─48384a51-2f58-4d94-893f-9cab73d29789
+# ╟─00deb41f-ddd5-4e8a-8e66-ed640f9e0e15
+# ╟─10487a7f-1ef4-496e-a48f-1149a1c0cf08
 # ╠═769382aa-3666-402a-a6c8-5b934ce6c69d
+# ╠═8f6826a5-b8f9-40b4-a793-a67028c6dea5
+# ╠═e8ed396a-a0a3-4080-9cf5-0b5402253cb5
+# ╠═4c0fcdf3-4df4-463b-ab53-538e9c3fd9f9
+# ╠═e183e449-d112-4317-b987-84f5980cfc65
+# ╠═646d39a4-b107-4b6b-b667-842bcd25e502
+# ╠═10d48fb5-d1f1-4cb3-8087-368e42cf8bf6
 # ╠═0d460887-d910-4b05-aea8-d24f390e4833
 # ╠═4376aecc-078e-4c20-ab4f-1bd0843dea07
-# ╟─ecbe31c7-84ab-486d-8277-648edc4ff0ac
-# ╟─10487a7f-1ef4-496e-a48f-1149a1c0cf08
 # ╟─522e5282-712f-4d80-a379-08ed015c8610
+# ╟─cda4f21e-44a5-43d7-9052-5d7be025d2cd
+# ╠═77d5226d-0759-4133-b934-9155c4499b20
 # ╟─b0aece7e-c7ef-404c-bab4-69b1cf85fb3e
 # ╟─4681a0d4-81e5-42e1-98c4-2b587f438c7b
 # ╟─cafb4dbc-6397-485e-a694-a018359ca594
 # ╟─24e8ebf2-43a3-42d7-a4d9-6938e4804caa
-# ╠═77d5226d-0759-4133-b934-9155c4499b20
+# ╟─6bf1d725-d99c-4871-8c16-cc258839bd04
+# ╟─b001acee-0b60-4904-b62b-c9e5a7b4d74f
 # ╟─2443a333-e6e6-4550-8a62-6c7a546d3380
 # ╟─65db8d3c-a231-44bc-a5b9-b3d09619f272
-# ╟─73930689-cea1-4319-b30d-c2f6b04f5859
-# ╟─10cd0beb-46de-45e5-b2f3-cc0714471ec0
+# ╟─56a2e8cb-eee7-4427-a9c2-a53baac7b794
+# ╠═c13826e8-2230-4d06-90f7-769d95360451
+# ╟─bff76e5a-c9d5-4051-8ffc-e0ddb7423a5b
+# ╟─4f6da2c6-ffc3-4684-8b32-1f576fa785c0
 # ╟─c4eb217b-81d7-4128-8e21-935475f72214
 # ╟─08cc6777-c9b0-410b-bc55-cceb99015cb9
-# ╠═f3e6e227-9849-41fd-b99f-3c95868b4ad2
-# ╠═f6f691e2-14c3-4483-b822-ee3a746271bc
-# ╠═477c8a45-063b-4e96-8a60-db99dee9ec5d
-# ╠═873f7287-5a3c-4253-8979-71e4bb1fe9a0
+# ╟─f3e6e227-9849-41fd-b99f-3c95868b4ad2
+# ╟─f6f691e2-14c3-4483-b822-ee3a746271bc
+# ╟─477c8a45-063b-4e96-8a60-db99dee9ec5d
+# ╟─873f7287-5a3c-4253-8979-71e4bb1fe9a0
 # ╟─8901d2db-09a8-4a5b-bd2e-8ee8428f4cb2
-# ╠═bcc4a4b9-ee24-4982-bae3-37f39e54a3d1
-# ╠═1d766cbb-82f5-4f36-b023-258823bd663b
-# ╠═39a8c949-a9fc-4b91-91c0-f0d772484c50
+# ╟─bcc4a4b9-ee24-4982-bae3-37f39e54a3d1
+# ╟─1d766cbb-82f5-4f36-b023-258823bd663b
+# ╟─39a8c949-a9fc-4b91-91c0-f0d772484c50
 # ╟─00a88397-7168-47bf-a53d-794577dd490f
-# ╠═767f035d-fa4b-4099-9e37-cd85e9a0d83f
-# ╠═77d700c2-555a-4793-9920-4e0778722fe7
-# ╠═78cfc659-4925-42d5-9e25-4250cb956d3c
+# ╟─767f035d-fa4b-4099-9e37-cd85e9a0d83f
+# ╟─77d700c2-555a-4793-9920-4e0778722fe7
+# ╟─78cfc659-4925-42d5-9e25-4250cb956d3c
 # ╟─6ba89644-0486-4334-bb1f-1907e69ec927
 # ╟─97ef8fea-d22a-4929-a975-a69690cdfac5
 # ╟─68ad58b0-c6e4-4609-b29a-fe594b37e6f9
+# ╟─c44c1a73-3ce3-48ca-9108-4657654405a5
+# ╟─bfc8ba94-4b00-4440-b3c6-3f322749f6c8
 # ╟─9b0bb6c2-7df2-4030-9039-a1e65af46825
 # ╟─683328c8-40f1-4b4b-bc99-9ea316fb51be
-# ╟─aa8c9f5b-de4f-478a-9236-c0286bc8003c
+# ╟─2a194322-6246-4ede-9e41-30fffaa7765b
+# ╟─5feec8d9-c530-474d-8c42-e1949f439cfb
+# ╟─289db6e8-79e5-4ef5-945f-ba29b8e0a5d9
+# ╟─950f0381-87cd-4851-ae97-278c1a428da4
 # ╟─5c23113e-f136-486c-8735-2aeeb178ade2
 # ╠═1071b333-dd21-474c-8378-ae5517fa4e2d
 # ╟─00000000-0000-0000-0000-000000000001
