@@ -1,0 +1,16 @@
+{
+  "name": "ide",
+  "validation": {
+    "invalidLink": true,
+    "notExported": true
+  },
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/extension",
+    "packages/common",
+    "packages/panoptes",
+    "packages/itests",
+    "packages/system",
+    "packages/print"
+  ]
+}

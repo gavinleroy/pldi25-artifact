@@ -1,0 +1,17 @@
+.FailingSet {
+    position: relative;
+    margin-bottom: 0.25em;
+}
+
+.FailingSet.is-hovered {
+    outline: 2pt dashed var(--vscode-focusBorder);
+    border-radius: 3pt;
+}
+
+.FailingSet > i {
+    position: absolute;
+    top: 0;
+    right: 0;
+
+    font-size: 0.25em;
+}

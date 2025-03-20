@@ -1,0 +1,25 @@
+{
+  "name": "@argus/evaluation",
+  "version": "0.1.0",
+  "bin": {
+    "evaluation": "dist/evaluation.cjs"
+  },
+  "type": "module",
+  "depot": {
+    "platform": "node",
+    "depot-version": "0.3.0"
+  },
+  "devDependencies": {
+    "@argus/common": "workspace:*",
+    "@argus/system": "workspace:*",
+    "@types/glob": "^8.1.0",
+    "@types/lodash": "^4.17.0",
+    "@types/tmp": "^0.2.6",
+    "glob": "^8.1.0",
+    "lodash": "^4.17.21",
+    "playwright": "1.47.0",
+    "tmp": "^0.2.3",
+    "unique-filename": "^3.0.0",
+    "vite": "^4.4.9"
+  }
+}

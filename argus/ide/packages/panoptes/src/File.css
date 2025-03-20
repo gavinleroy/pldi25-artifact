@@ -1,0 +1,10 @@
+span.ErrorCount {
+    color: var(--vscode-errorForeground);
+}
+
+.NoInfoError {
+    color: var(--vscode-errorForeground);
+    font-weight: bold;
+    overflow-y: scroll;
+    padding: 1em;
+}

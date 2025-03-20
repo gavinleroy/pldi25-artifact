@@ -1,0 +1,16 @@
+details.toggle-box {
+  display: inline-block;  
+  border: 1px solid var(--vscode-textCodeBlock-background);
+  border-radius: 4px;
+}
+
+details[open].toggle-box > summary {
+  display: none;
+}
+
+details.toggle-box > summary {
+  list-style: none;
+
+  color: var(--vscode-input-placeholderForeground);
+  font-size: 80%;
+}

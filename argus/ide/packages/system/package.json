@@ -1,0 +1,27 @@
+{
+  "name": "@argus/system",
+  "version": "0.1.0",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/lib.js",
+  "exports": {
+    ".": {
+      "default": "./dist/lib.js"
+    },
+    "./*": {
+      "default": "./dist/*.js"
+    }
+  },
+  "type": "module",
+  "depot": {
+    "platform": "node",
+    "depot-version": "0.3.0"
+  },
+  "typedoc": {
+    "entryPoint": "./src/lib.ts"
+  },
+  "devDependencies": {
+    "cancelable-promise": "^4.3.1"
+  }
+}
