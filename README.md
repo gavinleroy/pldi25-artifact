@@ -49,3 +49,5 @@ open-evaluation
 ```
 
 The above will start a Julia server running within Docker, you will need to navigate to `localhost:8888` to view the notebook. **NOTE, navigate to the URL provided in the output of the above command. (See below image)** All numbers and figures should be the same except the performance numbers, which will vary.
+
+![Screenshot 2025-03-18 at 23 44 30](https://github.com/user-attachments/assets/ee2d1dc7-7bb0-4bab-bda9-6eb04fabcb06)
