@@ -1,0 +1,9 @@
+[package]
+name = "space"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+numerical-macros = { path = "../numerical-macros", version = "0.1.0" }
+space-macros = { path = "../space-macros", version = "0.1.0" }
+bevy_utils = "0.14"
