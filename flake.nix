@@ -3,14 +3,12 @@
     nixpkgs.url = "github:NixOS/nixpkgs/80a3e9ca766a82fcec24648ab3a771d5dd8f9bf2";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    depot-js.url = 
-      "github:cognitive-engineering-lab/depot?rev=3676b134767aba6a951ed5fdaa9e037255921475";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=6c98f73052bca7cb154e781519ac39c4e8f1f9b4";
+      "github:cognitive-engineering-lab/argus?rev=b075bed6925924e7ecc02970eb0800db974cca4e";
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, depot-js, argus }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
         overlays = [ (import rust-overlay) nix-vscode-extensions.overlays.default ];
@@ -34,24 +32,53 @@
           };
         };
 
-        inherit (argus.packages.${system}) argus-cli argus-ide argus-book;
+        inherit (argus.packages.${system}) argus-cli argus-ide argus-extension argus-book;
         toolchain = pkgs.rust-bin.fromRustupToolchainFile "${argus}/rust-toolchain.toml";
 
         host = "0.0.0.0";
         port = "8888";
 
+        dockerEnv = with pkgs; [
+          argus-cli
+          codium-with-argus
+
+          on-startup
+          run-evaluation
+          open-evaluation
+          open-workspace
+          open-tutorial
+
+          pkg-config
+          coreutils
+          binutils
+	  cacert
+          bashInteractive
+          gnused
+
+          julia-bin
+          alsa-lib.dev
+          udev.dev
+
+          # CLI DEPS
+          gcc
+          toolchain
+
+          # IDE DEPS
+          nodejs_20
+        ];
+
         run-evaluation = pkgs.writeScriptBin "run-evaluation" ''
-          cd argus &&
-          ARGUS_DNF_PERF= cargo test -p argus-cli &&
-	  cargo make build &&
-	  node ide/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
-	  node ide/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
-	  node ide/packages/evaluation/dist/evaluation.cjs -h --rankBy=depth &&
-          mkdir -p ../evaluation/data/gen
-	  mv crates/argus-cli/*.csv ../evaluation/data/gen/
-	  mv *.csv ../evaluation/data/gen/
+          cd argus && ARGUS_DNF_PERF=  cargo test -p argus-cli && cd -
+
+	  node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
+	  node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
+	  node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=depth &&
+
+          mkdir -p evaluation/data/gen
+	  mv argus/crates/argus-cli/*.csv evaluation/data/gen/
+	  mv *.csv evaluation/data/gen/
 	  # NOTE, compiler data is (partially) hand-tuned, so we copy it
-	  cp ../evaluation/data/heuristic-precision\[rust\].csv ../evaluation/data/gen/
+	  cp evaluation/data/heuristic-precision\[rust\].csv evaluation/data/gen/
         '';
 
         open-evaluation = pkgs.writeScriptBin "open-evaluation" ''
@@ -83,7 +110,7 @@
           vscode = pkgs.vscodium;
           vscodeExtensions = [
             pkgs.open-vsx-release.rust-lang.rust-analyzer
-            argus-ide
+            argus-extension
           ];
         };
 
@@ -91,49 +118,6 @@
           name = "evaluation-source";
           path = ./evaluation;
         };
-
-        dockerEnv = with pkgs; [
-          argus-cli
-          codium-with-argus
-
-          on-startup
-          run-evaluation
-          open-evaluation
-          open-workspace
-          open-tutorial
-
-          pkg-config
-          coreutils
-          binutils
-	  cacert
-          bashInteractive
-          gnused
-
-          # Used in my own debugging
-	  findutils
-	  iconv
-	  file
-          gnugrep
-	  strace
-          neovim
-
-          julia-bin
-          alsa-lib.dev
-          udev.dev
-
-          # CLI DEPS
-          gcc
-          toolchain
-          guile
-          guile-json
-          cargo-make
-
-          # IDE DEPS
-          depot-js.packages.${system}.default
-          nodejs_20
-          pnpm_9
-          biome
-        ];
 
         on-startup = pkgs.writeScriptBin "on-startup" ''
           #!/bin/bash
@@ -172,6 +156,7 @@
               "PORT=${port}"
               "PATH=${lib.makeBinPath dockerEnv}:${argus}/scripts:/argus/scripts:/argus/ide/node_modules/.bin" 
               "LD_LIBRARY_PATH=${lib.makeLibraryPath dockerEnv}"
+              "CARGO_TARGET_DIR=/tmp"
               "PKG_CONFIG_PATH=${udev.dev}/lib/pkgconfig:${alsa-lib.dev}/lib/pkgconfig"
               "PYTHON=${python3}"
               "LIBERTINE_PATH=${libertine}/share/fonts"
