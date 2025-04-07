@@ -1,20 +1,17 @@
-#![feature(
-  rustc_private,
-  if_let_guard,
-  let_chains,
-  box_patterns,
-  control_flow_enum
-)]
+#![feature(rustc_private, let_chains, box_patterns)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 extern crate rustc_data_structures;
+extern crate rustc_hashes;
 extern crate rustc_hir;
 extern crate rustc_hir_typeck;
 extern crate rustc_infer;
 extern crate rustc_middle;
+extern crate rustc_next_trait_solver;
 extern crate rustc_query_system;
 extern crate rustc_span;
 extern crate rustc_trait_selection;
+extern crate rustc_type_ir;
 
 pub mod hash;
 pub mod infer;

@@ -3,7 +3,7 @@ skip_core_tasks = true
 default_to_workspace = false
 
 [env]
-PATH = "${PWD}/scripts:${PATH}"
+PATH = "${PATH}:${PWD}/scripts"
 
 # #################### #
 # Binding initializers #
@@ -59,11 +59,6 @@ parallel = true
 # Evaluation Crap #
 # ############### #
 
-[tasks.eval-all]
-command = "node"
-args = ["ide/packages/evaluation/dist/evaluation.cjs", "-a", "${@}"]
-dependencies = ["build"]
-
 [tasks.eval]
 command = "node"
 args = ["ide/packages/evaluation/dist/evaluation.cjs", "-h", "${@}"]
@@ -77,7 +72,7 @@ dependencies = ["build"]
 [tasks.eval-serve]
 script = """
 python3 -m webbrowser http://localhost:8080/eval
-./scripts/evaluation.scm
+evaluation.scm
 """
 
 [tasks.evaluation]

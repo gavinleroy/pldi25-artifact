@@ -3,7 +3,7 @@
 This artifact contains the codebase, data, and scripts required to reproduce every part of the paper. A rough overview, in order of the paper's sections for which we've provided an artifact to verify:
 
 - Section 4: Implementation
-  The code for the [VSCode extension `Argus`](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) is provided in the `argus` directory. See the README in that directory for instructions on how to install and use Argus.
+  The code for the [VSCode extension `Argus`](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) is provided in the `argus` directory. The below instructions include a step for compiling the CLI and running it on sample data, but see the README in that directory for instructions on how to install and use the Argus VS Code extension.
 
 - Section 5: Evaluation
   - 5.1 User Study
@@ -14,13 +14,15 @@ This artifact contains the codebase, data, and scripts required to reproduce eve
 
 ## Supported Claims
 
-The results in Section 5 for the user study are fully reproducible; the numbers shown in the Julia Notebook should match those in the paper. 
+The results in Section 5 for the user study are fully reproducible; the numbers shown in the Julia Notebook should match those in the paper.
 
 *Note, running the performance analysis for the inertia analysis on your local machine may not produce exact numbers. But they should follow a similar trend.*
 
-# Getting Started
+## Getting Started
 
-The artifact is packaged as a Docker image, so the only system requirement is Docker. First, load the `gavinleroy/pldi25-argus-<ARCH>` image (available on DockerHub[(aarch64)](https://hub.docker.com/repository/docker/gavinleroy/pldi25-argus-aarch64/general)[(amd64)](https://hub.docker.com/repository/docker/gavinleroy/pldi25-argus-amd64/general)). We distribute two images: `aarch64` built for ARM platforms (e.g., an M1 Mac), and `amd64` built for x86 platforms (everything else). Download the image appropriate for your computer, and then run the following, replacing `<ARCH>` with either `aarch64` or `amd64` as appropriate:
+The artifact is packaged as a Docker image, so the only system requirement is Docker. First, load the `gavinleroy/pldi25-argus-<ARCH>` image from the Zenodo repository. We distribute two images: `aarch64` built for ARM platforms (e.g., an M1 Mac), and `amd64` built for x86 platforms (everything else). The images are also available on DockerHub[(aarch64)](https://hub.docker.com/repository/docker/gavinleroy/pldi25-argus-aarch64/general)[(amd64)](https://hub.docker.com/repository/docker/gavinleroy/pldi25-argus-amd64/general).
+
+Download the image appropriate for your computer, and then run the following, replacing `<ARCH>` with either `aarch64` or `amd64` as appropriate:
 
 ```bash
 docker load -i gavinleroy/pldi25-argus-<ARCH>.tar.gz
@@ -32,22 +34,26 @@ Run the container with the following command (it's important to expose port `888
 docker run -p 8888:8888 -ti gavinleroy/pldi25-argus-<ARCH>
 ```
 
-To verify that the code artifacts are working, first you can check that Argus (the name of the compiler extension) works correctly. For this task, run the following in the container:
+The following step will verify that the code artifacts build and run. The following command will compile and run the tool on the included example workspaces, the same used for Figure 11 (Section 5.2.2) in the paper. The data gathered in this step will be reflected in the data analysis notebook in the following step.
+
+> :warning: stderr will have many lines that start with `MISSING` or `ERROR`, but if the process exits with status `0` then there were no actual errors. It's just a chatty script.
+
+Run the following:
 
 ```bash
 run-evaluation
 ```
 
-> :warning: stderr will have many lines that start with `MISSING` or `ERROR`, but if the process exits with status `0` then there were no actual errors. It's just a chatty script.
+If the above worked, then you can compare the local data with the data used in the paper evaluation. The next command will download the Julia dependencies and start a server within the container. After launching, navigate to `localhost:8888` to view the full notebook.
 
-This script will run the Argus tool within the docker container, gathering the performance and accuracy numbers used in Figure 11 (Section 5.2.2).
+> **NOTE, navigate to the URL provided in the command output. The screenshot below shows what this will look like**
 
-After generating the data on your local machine, you can view the full evaluation by running the following command:
+Run the following command:
 
 ```bash
 open-evaluation
 ```
 
-The above will start a Julia server running within Docker, you will need to navigate to `localhost:8888` to view the notebook. **NOTE, navigate to the URL provided in the output of the above command. (See below image)** All numbers and figures should be the same except the performance numbers, which will vary.
+All numbers and figures should be the same except the performance numbers gathered in the container, these will vary.
 
 ![Screenshot 2025-03-18 at 23 44 30](https://github.com/user-attachments/assets/ee2d1dc7-7bb0-4bab-bda9-6eb04fabcb06)

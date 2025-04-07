@@ -23,15 +23,9 @@
 //!
 //! If you need to serialize an optional type then prefix it with `Option__`, and
 //! lists of elements are serialized with a prefixed `Slice__`.
-#![feature(
-  rustc_private,
-  let_chains,
-  if_let_guard,
-  decl_macro,
-  extract_if,
-  associated_type_defaults
-)]
+#![feature(rustc_private, decl_macro, let_chains)]
 #![allow(non_camel_case_types, non_snake_case)]
+extern crate rustc_abi;
 extern crate rustc_apfloat;
 extern crate rustc_ast_ir;
 extern crate rustc_data_structures;
@@ -55,6 +49,9 @@ use std::cell::Cell;
 pub mod interner;
 
 pub use argus::*;
+pub(crate) use argus_ser_macros::{
+  argus, serialize_custom_seq, Many, Maybe, Poly,
+};
 pub(crate) use r#dyn::DynCtxt;
 use rustc_infer::infer::InferCtxt;
 use rustc_trait_selection::traits::solve::Goal;
@@ -95,22 +92,10 @@ trait InferCtxtSerializeExt {
   fn should_print_verbose(&self) -> bool;
 }
 
-impl<'tcx> InferCtxtSerializeExt for InferCtxt<'tcx> {
+impl InferCtxtSerializeExt for InferCtxt<'_> {
   fn should_print_verbose(&self) -> bool {
     self.tcx.sess.verbose_internals()
   }
-}
-
-#[macro_export]
-macro_rules! serialize_custom_seq {
-  ($wrap:ident, $serializer:expr, $value:expr) => {{
-    use serde::ser::SerializeSeq;
-    let mut seq = $serializer.serialize_seq(Some($value.len()))?;
-    for e in $value.into_iter() {
-      seq.serialize_element(&$wrap(e))?;
-    }
-    seq.end()
-  }};
 }
 
 // ----------------------------------------
@@ -284,10 +269,37 @@ macro_rules! serialize_as_number {
 
 #[cfg(feature = "testing")]
 mod tests {
+
   #[test]
   fn export_bindings_indices() {
     crate::ts! {
       crate::interner::TyIdx,
     }
+  }
+}
+
+#[cfg(test)]
+mod tests_ {
+  use std::marker::PhantomData;
+
+  use serde::Serialize;
+
+  #[test]
+  /// NOTE the Argus serialization depends on the fact that a
+  /// two field tuple struct (and a skipped field) with `transparent` will produce
+  /// the first value bare.
+  fn serde_transparent() {
+    #[derive(Serialize)]
+    #[serde(transparent)]
+    pub struct W<'a>(i32, #[serde(skip)] PhantomData<&'a ()>);
+
+    impl<'a> W<'a> {
+      fn new(v: i32) -> Self {
+        W(v, PhantomData)
+      }
+    }
+
+    let s = serde_json::to_string(&W::new(0)).unwrap();
+    assert!(s.eq("0"));
   }
 }

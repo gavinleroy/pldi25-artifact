@@ -36,12 +36,14 @@
           useFetchCargoVendor = true;
         };
 
-        env-vars = {
-          RUSTC_LINKER = "${pkgs.llvmPackages.clangUseLLVM}/bin/clang";
-          # NOTE: currently playwright-driver uses version 1.40.0, when something inevitably fails,
-          # check that the version of playwright-driver and that of the NPM playwright
-          # `packages/evaluation/package.json` match.
-          PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}";
+        env-vars = with pkgs; {
+          RUSTC_LINKER = "${llvmPackages.clangUseLLVM}/bin/clang";
+          SSL_CERT_FILE="${cacert}/etc/ssl/certs/ca-bundle.crt";
+          # NOTE: The version of playwright-driver and that of the NPM playwright
+          # `packages/evaluation/package.json` must match.
+          PLAYWRIGHT_BROWSERS_PATH="${playwright-driver.browsers}";
+        } // lib.optionalAttrs stdenv.isLinux {
+          PKG_CONFIG_PATH="${udev.dev}/lib/pkgconfig:${alsa-lib.dev}/lib/pkgconfig";
         };
 
         native-deps = with pkgs; [
@@ -49,6 +51,9 @@
           cacert
         ] ++ lib.optionals stdenv.isDarwin [
           darwin.apple_sdk.frameworks.SystemConfiguration
+        ] ++ lib.optionals stdenv.isLinux [
+          alsa-lib.dev
+          udev.dev
         ];
 
         cli-deps = with pkgs; [
@@ -87,8 +92,13 @@
           doCheck = false;
 
           env = (env-vars // {
-            CARGO_HOME = "${placeholder "out"}/.cargo";
+            CARGO_HOME="${placeholder "out"}/.cargo";
           });
+
+          preBuild = ''
+            export PATH="$PATH:$PWD/scripts"
+            patchShebangs .
+          '';
 
           postBuild = ''
             cargo make init-bindings
@@ -107,8 +117,8 @@
           vsce package --allow-unused-files-pattern -o ${archiveBase}.${ext}
         '';
 
-        argus-vsix = pkgs.stdenv.mkDerivation {
-          name = "argus-vsix";
+        argus-ide = pkgs.stdenv.mkDerivation {
+          name = "argus-ide";
           inherit version;
           src = pkgs.lib.cleanSource ./.;
           nativeBuildInputs = native-deps ++ ide-deps;
@@ -117,14 +127,16 @@
           installPhase = ''
             mkdir -p $out/share/vscode/extensions
             mv ${archiveBase}.zip $out/share/vscode/extensions/
+            cd ../../../
+            cp -LR ide $out/lib
           '';
         };
 
-        argus-ide = pkgs.vscode-utils.buildVscodeExtension rec {
+        argus-extension = pkgs.vscode-utils.buildVscodeExtension rec {
           name = "argus-ide";
           vscodeExtPublisher = "gavinleroy";
           inherit version;
-          src = "${argus-vsix}/share/vscode/extensions/${archiveBase}.zip";
+          src = "${argus-ide}/share/vscode/extensions/${archiveBase}.zip";
           vscodeExtName = name;
           vscodeExtUniqueId = "gavinleroy.argus";
         };
@@ -143,11 +155,11 @@
 
           installPhase = ''
             mkdir -p $out
-            cp -r book/* $out
+            cp -R book/* $out
           '';
         };
 
-        checkProject = pkgs.writeScriptBin "ci-check" ''
+        ci-check = pkgs.writeScriptBin "ci-check" ''
           cargo fmt --check
           cargo clippy
           codespell .
@@ -167,20 +179,15 @@
           inherit 
           argus-cli 
           argus-ide 
+          argus-extension 
           argus-book;
         };
 
-        devShell = with pkgs; mkShell ({
+        devShells.default = with pkgs; mkShell ({
           nativeBuildInputs = native-deps;
           buildInputs = cli-deps ++ ide-deps ++ book-deps ++ [
-            checkProject
-            publishCrates
-            publishExtension
-            cargo-workspaces
             rust-analyzer
-          ] ++ lib.optionals stdenv.isLinux [
-            alsa-lib.dev
-            udev.dev
+            ci-check
           ];
 
           # Needed in order to run `cargo argus ...` within the directory
@@ -188,6 +195,16 @@
             export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$(rustc --print target-libdir)"
             export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:$(rustc --print target-libdir)"
           '';
+        } // env-vars);
+
+        devShells.ci = with pkgs; mkShell ({
+          nativeBuildInputs = native-deps;
+          buildInputs = cli-deps ++ ide-deps ++ book-deps ++ [
+            cargo-workspaces
+            ci-check
+            publishCrates
+            publishExtension
+          ];
         } // env-vars);
       });
 }

@@ -1,3 +1,6 @@
+use std::marker::PhantomData;
+
+use rustc_abi::Size;
 use rustc_apfloat::{
   ieee::{Double, Single},
   Float,
@@ -5,7 +8,6 @@ use rustc_apfloat::{
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::*;
 use rustc_span::Symbol;
-use rustc_target::abi::Size;
 use serde::Serialize;
 #[cfg(feature = "testing")]
 use ts_rs::TS;
@@ -18,25 +20,15 @@ use super::{
 
 // TODO: one thing missing is being able to print
 // the `Ty` after the constant syntactic definition.
-pub struct ConstDef;
-impl ConstDef {
-  pub fn serialize<S>(value: &Const, s: S) -> Result<S::Ok, S::Error>
+#[derive(Many)]
+#[argus(remote = "Const")]
+pub struct ConstDef<'tcx>(PhantomData<&'tcx ()>);
+impl<'tcx> ConstDef<'tcx> {
+  pub fn serialize<S>(value: &Const<'tcx>, s: S) -> Result<S::Ok, S::Error>
   where
     S: serde::Serializer,
   {
     ConstKindDef::from(value).serialize(s)
-  }
-}
-
-pub struct Slice__ConstDef;
-impl Slice__ConstDef {
-  pub fn serialize<S>(value: &[Const], s: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::Serializer,
-  {
-    #[derive(Serialize)]
-    struct Wrapper<'a, 'tcx>(#[serde(with = "ConstDef")] &'a Const<'tcx>);
-    serialize_custom_seq! { Wrapper, s, value }
   }
 }
 
@@ -66,29 +58,27 @@ enum ConstKindDef<'tcx> {
   },
   Placeholder,
   Value {
-    #[cfg_attr(feature = "testing", ts(type = "ValTree"))]
-    data: ValTreeDef<'tcx>,
+    #[serde(with = "ValueDef")]
+    #[cfg_attr(feature = "testing", ts(type = "Value"))]
+    data: Value<'tcx>,
   },
   Error,
   Expr {
-    #[serde(with = "ExprDef")]
-    #[cfg_attr(feature = "testing", ts(type = "ExprDef"))]
-    data: Expr<'tcx>,
+    data: ExprDef<'tcx>,
   },
 }
 
-impl<'a, 'tcx: 'a> From<&Const<'tcx>> for ConstKindDef<'tcx> {
+impl<'tcx> From<&Const<'tcx>> for ConstKindDef<'tcx> {
   fn from(value: &Const<'tcx>) -> Self {
-    let self_ty = value.ty();
     let kind = value.kind();
 
     match kind {
       ConstKind::Unevaluated(uc) => Self::Unevaluated { data: uc },
       ConstKind::Param(v) => Self::Param { data: v },
-      ConstKind::Value(v) => Self::Value {
-        data: ValTreeDef::new(v, self_ty),
+      ConstKind::Value(data) => Self::Value { data },
+      ConstKind::Expr(e) => Self::Expr {
+        data: ExprDef::from(&e),
       },
-      ConstKind::Expr(e) => Self::Expr { data: e },
       ConstKind::Error(..) => Self::Error,
 
       ConstKind::Bound(didx, bv) => Self::Bound {
@@ -119,9 +109,7 @@ impl InferConstDef {
   pub fn new(value: &InferConst) -> Self {
     // TODO: can we get the name of an inference variable?
     match value {
-      InferConst::Fresh(_) | InferConst::EffectVar(_) | InferConst::Var(_) => {
-        Self::Anon
-      }
+      InferConst::Fresh(_) | InferConst::Var(_) => Self::Anon,
     }
   }
 
@@ -180,21 +168,22 @@ impl<'tcx> UnevaluatedConstDef<'tcx> {
           data: path::ValuePathWithArgs::new(*def, args),
         },
         DefKind::AnonConst => {
-          if def.is_local()
-            && let span = infcx.tcx.def_span(def)
-            && let Ok(snip) = infcx.tcx.sess.source_map().span_to_snippet(span)
-          {
-            Self::AnonSnippet { data: snip }
-          } else {
-            // Do not call `print_value_path` as if a parent of this anon const is an impl it will
-            // attempt to print out the impl trait ref i.e. `<T as Trait>::{constant#0}`. This would
-            // cause printing to enter an infinite recursion if the anon const is in the self type i.e.
-            // `impl<T: Default> Default for [T; 32 - 1 - 1 - 1] {`
-            // where we would try to print `<[T; /* print `constant#0` again */] as Default>::{constant#0}`
-            Self::AnonLocation {
-              krate: infcx.tcx.crate_name(def.krate),
-              path: path::BasicPathNoArgs::new(*def),
+          if def.is_local() {
+            let span = infcx.tcx.def_span(def);
+            if let Ok(snip) = infcx.tcx.sess.source_map().span_to_snippet(span)
+            {
+              return Self::AnonSnippet { data: snip };
             }
+          }
+
+          // Do not call `print_value_path` as if a parent of this anon const is an impl it will
+          // attempt to print out the impl trait ref i.e. `<T as Trait>::{constant#0}`. This would
+          // cause printing to enter an infinite recursion if the anon const is in the self type i.e.
+          // `impl<T: Default> Default for [T; 32 - 1 - 1 - 1] {`
+          // where we would try to print `<[T; /* print `constant#0` again */] as Default>::{constant#0}`
+          Self::AnonLocation {
+            krate: infcx.tcx.crate_name(def.krate),
+            path: path::BasicPathNoArgs::new(*def),
           }
         }
         defkind => panic!("unexpected defkind {defkind:?} {value:?}"),
@@ -236,22 +225,22 @@ pub enum ConstScalarIntDef {
   },
 }
 
-impl<'tcx> ConstScalarIntDef {
-  pub fn new(int: ScalarInt, ty: Ty<'tcx>) -> Self {
+impl ConstScalarIntDef {
+  pub fn new(int: ScalarInt, ty: Ty) -> Self {
     InferCtxt::access(|infcx| {
       let tcx = infcx.tcx;
       match ty.kind() {
         Bool if int == ScalarInt::FALSE => Self::False,
         Bool if int == ScalarInt::TRUE => Self::True,
         Float(FloatTy::F32) => {
-          let val = Single::try_from(int).unwrap();
+          let val = Single::from(int);
           Self::Float {
             data: format!("{val}"),
             is_finite: val.is_finite(),
           }
         }
         Float(FloatTy::F64) => {
-          let val = Double::try_from(int).unwrap();
+          let val = Double::from(int);
           Self::Float {
             data: format!("{val}"),
             is_finite: val.is_finite(),
@@ -270,8 +259,8 @@ impl<'tcx> ConstScalarIntDef {
         Char if char::try_from(int).is_ok() => Self::Char {
           data: format!("{}", char::try_from(int).is_ok()),
         },
-        Ref(..) | RawPtr(..) | FnPtr(_) => {
-          let data = int.assert_bits(tcx.data_layout.pointer_size);
+        Ref(..) | RawPtr(..) | FnPtr(..) => {
+          let data = int.to_bits(tcx.data_layout.pointer_size);
           Self::Misc {
             data: format!("0x{data:x}"),
           }

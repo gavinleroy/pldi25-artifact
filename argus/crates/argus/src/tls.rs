@@ -56,7 +56,7 @@ pub fn store_body_def_path(infcx: &InferCtxt, body_id: BodyId) {
       return;
     }
 
-    let def_id = infcx.tcx.hir().body_owner_def_id(body_id).to_def_id();
+    let def_id = infcx.tcx.hir_body_owner_def_id(body_id).to_def_id();
     let name = unsafe_tls::access_interner(|ty_interner| {
       ser::to_value_expect(infcx, ty_interner, &ser::PathDefNoArgs(def_id))
     });
@@ -93,7 +93,7 @@ pub fn drain_implied_ambiguities<'tcx>(
       // 1. Ambiguous and--
       // 2. Implied by the passed obligation
       let is_ambig = provenance.result.is_maybe();
-      let is_implied = provenance.full_data.map_or(false, |idx| {
+      let is_implied = provenance.full_data.is_some_and(|idx| {
         unsafe_tls::borrow_in(idx, |fdata| {
           let infcx = &fdata.infcx;
           let previous_pred = &fdata.obligation.predicate;

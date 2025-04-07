@@ -4,7 +4,7 @@ use anyhow::Result;
 use argus_ser::{self as ser, interner::TyIdx};
 use index_vec::IndexVec;
 use indexmap::IndexSet;
-use rustc_data_structures::stable_hasher::Hash64;
+use rustc_hashes::Hash64;
 use rustc_infer::{infer::InferCtxt, traits::PredicateObligation};
 use rustc_middle::{
   traits::{
@@ -426,7 +426,19 @@ pub(super) mod intermediate {
 
   pub type EvaluationResult = Result<Certainty, NoSolution>;
 
-  pub struct EvaluationResultDef;
+  #[derive(Serialize)]
+  #[cfg_attr(feature = "testing", derive(TS))]
+  #[cfg_attr(feature = "testing", ts(export, rename = "EvaluationResult"))]
+  #[serde(rename_all = "kebab-case")]
+  #[allow(dead_code)]
+  /// NOTE only used for TS types
+  pub enum EvaluationResultDef {
+    Yes,
+    MaybeOverflow,
+    MaybeAmbiguity,
+    No,
+  }
+
   impl EvaluationResultDef {
     pub fn serialize<S: serde::Serializer>(
       value: &EvaluationResult,

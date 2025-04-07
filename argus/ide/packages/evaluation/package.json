@@ -2,6 +2,7 @@
   "name": "@argus/evaluation",
   "version": "0.1.0",
   "bin": {
+    "platform": "node",
     "evaluation": "dist/evaluation.cjs"
   },
   "type": "module",

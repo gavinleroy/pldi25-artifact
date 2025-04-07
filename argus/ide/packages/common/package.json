@@ -4,6 +4,9 @@
   "files": [
     "dist"
   ],
+  "depot": {
+    "depot-version": "0.3.0"
+  },
   "main": "dist/lib.js",
   "exports": {
     ".": {
@@ -15,8 +18,7 @@
   },
   "type": "module",
   "depot": {
-    "platform": "browser",
-    "depot-version": "0.3.0"
+    "platform": "browser"
   },
   "typedoc": {
     "entryPoint": "./src/lib.ts"

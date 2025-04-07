@@ -147,6 +147,9 @@ impl<'a, 'tcx> Goal<'a, 'tcx> {
   }
 
   pub fn last_ancestor_pre_builtin(&self) -> Self {
+    let mut i = self.idx;
+    let tree = self.tree;
+
     let not_builtin = |kind| {
       !matches!(kind, ProbeKind::TraitCandidate {
         source: CandidateSource::BuiltinImpl(..),
@@ -154,14 +157,15 @@ impl<'a, 'tcx> Goal<'a, 'tcx> {
       })
     };
 
-    let mut i = self.idx;
-    let tree = self.tree;
+    let get_next_ancestor = |i: I| -> Option<I> {
+      let parent = tree.topology.parent(i)?;
+      match tree.ns[parent] {
+        N::C { kind, .. } if not_builtin(kind) => tree.topology.parent(parent),
+        _ => None,
+      }
+    };
 
-    while let Some(parent) = tree.topology.parent(i)
-      && let N::C { kind, .. } = tree.ns[parent]
-      && not_builtin(kind)
-      && let Some(grandparent) = tree.topology.parent(parent)
-    {
+    while let Some(grandparent) = get_next_ancestor(i) {
       i = grandparent;
     }
 
@@ -182,8 +186,9 @@ impl<'a, 'tcx> Goal<'a, 'tcx> {
       ty::PredicateKind::Clause(ty::ClauseKind::Trait(t))
         if t.polarity == ty::PredicatePolarity::Positive
           && tcx.is_fn_trait(t.def_id())
-          && let Some(fn_arity) = tcx.function_arity(t.self_ty()) =>
+          && tcx.function_arity(t.self_ty()).is_some() =>
       {
+        let fn_arity = tcx.function_arity(t.self_ty()).unwrap();
         let trait_arity = tcx.fn_trait_arity(t).unwrap_or(usize::MAX);
 
         log::debug!("FnSigs\n{:?}\n{:?}", t.self_ty(), t.trait_ref);
@@ -213,8 +218,9 @@ impl<'a, 'tcx> Goal<'a, 'tcx> {
       // Self type is a function type but the trait isn't
       ty::PredicateKind::Clause(ty::ClauseKind::Trait(t))
         if t.polarity == ty::PredicatePolarity::Positive
-          && let Some(fn_arity) = tcx.function_arity(t.self_ty()) =>
+          && tcx.function_arity(t.self_ty()).is_some() =>
       {
+        let fn_arity = tcx.function_arity(t.self_ty()).unwrap();
         let def_id = t.def_id();
         let location = if def_id.is_local() {
           Location::Local
@@ -270,7 +276,7 @@ impl<'a, 'tcx> Goal<'a, 'tcx> {
       ty::PredicateKind::Clause(..)
       | ty::PredicateKind::NormalizesTo(..)
       | ty::PredicateKind::AliasRelate(..)
-      | ty::PredicateKind::ObjectSafe(..)
+      | ty::PredicateKind::DynCompatible(..)
       | ty::PredicateKind::Subtype(..)
       | ty::PredicateKind::Coerce(..)
       | ty::PredicateKind::ConstEquate(..)
@@ -304,13 +310,13 @@ impl<'a, 'tcx> Candidate<'a, 'tcx> {
 
   fn source_subgoals(&self) -> impl Iterator<Item = Goal<'a, 'tcx>> + '_ {
     let mut all_goals = self.all_subgoals().collect::<Vec<_>>();
-    argus_ext::ty::retain_error_sources(
+    let cap = argus_ext::ty::retain_error_sources(
       &mut all_goals,
       |g| g.result,
       |g| g.goal.predicate,
       |g| g.infcx.tcx,
     );
-
+    all_goals.truncate(cap);
     all_goals.into_iter()
   }
 }
@@ -401,7 +407,7 @@ impl<'a, 'tcx: 'a> T<'a, 'tcx> {
   }
 
   pub fn dnf(&self) -> impl Deref<Target = Dnf<I>> + '_ {
-    fn _goal(this: &T, goal: &Goal) -> Option<Dnf<I>> {
+    fn goal_(this: &T, goal: &Goal) -> Option<Dnf<I>> {
       if !((this.maybe_ambiguous && goal.result.is_maybe())
         || goal.result.is_no())
       {
@@ -410,7 +416,7 @@ impl<'a, 'tcx: 'a> T<'a, 'tcx> {
 
       let candidates = goal.interesting_candidates();
       let nested = candidates
-        .filter_map(|c| _candidate(this, &c))
+        .filter_map(|c| candidate_(this, &c))
         .collect::<Vec<_>>();
 
       if nested.is_empty() {
@@ -420,13 +426,13 @@ impl<'a, 'tcx: 'a> T<'a, 'tcx> {
       Dnf::or(nested.into_iter())
     }
 
-    fn _candidate(this: &T, candidate: &Candidate) -> Option<Dnf<I>> {
+    fn candidate_(this: &T, candidate: &Candidate) -> Option<Dnf<I>> {
       if candidate.result.is_yes() {
         return None;
       }
 
       let goals = candidate.source_subgoals();
-      Dnf::and(goals.filter_map(|g| _goal(this, &g)))
+      Dnf::and(goals.filter_map(|g| goal_(this, &g)))
     }
 
     if self.dnf.borrow().is_some() {
@@ -438,7 +444,7 @@ impl<'a, 'tcx: 'a> T<'a, 'tcx> {
     let dnf_start = Instant::now();
 
     let root = self.goal(self.root).expect("invalid root");
-    let dnf = _goal(self, &root).unwrap_or_else(Dnf::default);
+    let dnf = goal_(self, &root).unwrap_or_else(Dnf::default);
 
     timer::elapsed(&dnf_report_msg, dnf_start);
 

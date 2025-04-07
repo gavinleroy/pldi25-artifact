@@ -9,7 +9,7 @@ use argus_ext::{
 use argus_ser as ser;
 use argus_ser::interner::Interner;
 use index_vec::IndexVec;
-use rustc_data_structures::stable_hasher::Hash64;
+use rustc_hashes::Hash64;
 use rustc_hir::def_id::DefId;
 use rustc_infer::infer::InferCtxt;
 use rustc_trait_selection::{
@@ -92,9 +92,6 @@ impl Interners {
       ProbeKind::NormalizedSelfTyAssembly => {
         self.intern_can_string("normalized-self-ty-asm")
       }
-      ProbeKind::TryNormalizeNonRigid { .. } => {
-        self.intern_can_string("try-normalize-non-rigid")
-      }
       ProbeKind::UnsizeAssembly => self.intern_can_string("unsize-asm"),
       ProbeKind::UpcastProjectionCompatibility => {
         self.intern_can_string("upcase-proj-compat")
@@ -120,6 +117,7 @@ impl Interners {
       ProbeKind::OpaqueTypeStorageLookup { .. } => {
         self.intern_can_string("opaque-type-storage-lookup")
       }
+      ProbeKind::RigidAlias { .. } => self.intern_can_string("rigid-alias"),
     };
 
     Node::Candidate(can_idx)

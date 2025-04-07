@@ -1,7 +1,8 @@
 mod r#impl;
 
 use itertools::Itertools;
-use rustc_data_structures::{fx::FxHashMap as HashMap, stable_hasher::Hash64};
+use rustc_data_structures::fx::FxHashMap as HashMap;
+use rustc_hashes::Hash64;
 use rustc_hir::{def_id::DefId, BodyId, HirId};
 use rustc_infer::{infer::InferCtxt, traits::ObligationInspector};
 use rustc_middle::ty::{self, Predicate, TyCtxt, TypeVisitable, TypeckResults};
@@ -11,6 +12,10 @@ use rustc_utils::source_map::range::CharRange;
 use smallvec::SmallVec;
 
 use crate::EvaluationResult;
+
+pub trait ImplCandidateExt<'tcx> {
+  fn is_inductive(&self, tcx: TyCtxt<'tcx>) -> bool;
+}
 
 pub trait EvaluationResultExt {
   fn is_yes(&self) -> bool;
@@ -47,7 +52,7 @@ pub trait TyCtxtExt<'tcx> {
     self,
     body_id: BodyId,
     inspector: ObligationInspector<'tcx>,
-  ) -> &TypeckResults;
+  ) -> &'tcx TypeckResults<'tcx>;
 
   /// Test whether `a` is a parent node of `b`.
   fn is_parent_of(&self, a: HirId, b: HirId) -> bool;
@@ -162,14 +167,15 @@ pub fn identify_error_sources<'tcx, T>(
 /// The second goal cannot succeed because the first didn't. The solver will
 /// try to solve projection goals even if the base trait goal wasn't
 /// successful. This function removes the implied goals (no matter the nesting depth).
+#[must_use]
 pub fn retain_error_sources<'tcx, T>(
-  all_items: &mut Vec<T>,
+  all_items: &mut [T],
   get_result: impl Fn(&T) -> EvaluationResult,
   get_predicate: impl Fn(&T) -> Predicate<'tcx>,
   get_tcx: impl Fn(&T) -> TyCtxt<'tcx>,
-) {
+) -> usize {
   if all_items.is_empty() {
-    return;
+    return 0;
   }
 
   let idx = itertools::partition(&mut *all_items, |t| {
@@ -196,9 +202,14 @@ pub fn retain_error_sources<'tcx, T>(
   drop(is_implied_by_failing_bound);
   drop(trait_preds_enumerated);
 
-  for i in to_remove.iter().rev() {
-    all_items.remove(*i);
+  let mut swap_with = all_items.len();
+  while let Some(i) = to_remove.pop() {
+    swap_with -= 1;
+    debug_assert!(swap_with < all_items.len());
+    all_items.swap(i, swap_with);
   }
+
+  swap_with
 }
 
 pub fn retain_method_calls<'tcx, T>(
@@ -258,7 +269,7 @@ pub fn retain_method_calls<'tcx, T>(
       let tp =
         get_predicate(&trait_preds[*deref_pred]).expect_trait_predicate();
       let self_ty = tp.self_ty().skip_binder();
-      if all_base_tys.iter().any(|&t| t == self_ty) {
+      if all_base_tys.contains(&self_ty) {
         to_remove.push(*deref_pred);
       }
     }

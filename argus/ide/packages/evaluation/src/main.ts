@@ -37,18 +37,6 @@ async function main() {
   );
 
   switch (argv[2]) {
-    case "-a": {
-      await withServerOnPort(PORT, async () => {
-        let promises = _.map(["depth", "inertia", "rust", "vars"], rankBy => {
-          global.rankBy = rankBy;
-          return runBasic(TEST_CAUSES).then(
-            writeToCSV(`heuristic-precision[${rankBy}].csv`)
-          );
-        });
-        return Promise.all(promises);
-      });
-      break;
-    }
     case "-h": {
       await withServerOnPort(PORT, () => runBasic(TEST_CAUSES)).then(
         writeToCSV(global.outputFile)

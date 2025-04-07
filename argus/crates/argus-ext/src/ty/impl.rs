@@ -1,4 +1,4 @@
-use rustc_data_structures::stable_hasher::Hash64;
+use rustc_hashes::Hash64;
 use rustc_hir::{def_id::DefId, BodyId, HirId};
 use rustc_hir_typeck::inspect_typeck;
 use rustc_infer::{
@@ -21,7 +21,7 @@ use rustc_utils::source_map::range::CharRange;
 
 #[allow(clippy::wildcard_imports)]
 use super::*;
-use crate::{hash::StableHash, EvaluationResult};
+use crate::{hash::StableHash, rustc::ImplCandidate, EvaluationResult};
 
 impl EvaluationResultExt for EvaluationResult {
   fn is_yes(&self) -> bool {
@@ -97,6 +97,7 @@ impl<'tcx> TyExt<'tcx> for Ty<'tcx> {
       | ty::TyKind::Placeholder(..)
       | ty::TyKind::Pat(..)
       | ty::TyKind::Infer(..)
+      | ty::TyKind::UnsafeBinder(..)
       | ty::TyKind::Error(..) => false,
     }
   }
@@ -119,8 +120,7 @@ impl<'tcx> TyCtxtExt<'tcx> for TyCtxt<'tcx> {
   fn to_local(&self, body_id: BodyId, span: Span) -> Span {
     use rustc_utils::source_map::span::SpanExt;
 
-    let hir = self.hir();
-    let mut local_body_span = hir.body(body_id).value.span;
+    let mut local_body_span = self.hir_body(body_id).value.span;
     while local_body_span.from_expansion() {
       local_body_span = local_body_span.source_callsite();
     }
@@ -132,14 +132,14 @@ impl<'tcx> TyCtxtExt<'tcx> for TyCtxt<'tcx> {
     self,
     body_id: BodyId,
     inspector: ObligationInspector<'tcx>,
-  ) -> &TypeckResults {
-    let local_def_id = self.hir().body_owner_def_id(body_id);
+  ) -> &'tcx TypeckResults<'tcx> {
+    let local_def_id = self.hir_body_owner_def_id(body_id);
     // Typeck current body, accumulating inspected information in TLS.
     inspect_typeck(self, local_def_id, inspector)
   }
 
   fn is_parent_of(&self, a: HirId, b: HirId) -> bool {
-    a == b || self.hir().parent_iter(b).any(|(id, _)| id == a)
+    a == b || self.hir_parent_iter(b).any(|(id, _)| id == a)
   }
 
   fn predicate_hash(&self, p: &Predicate<'tcx>) -> Hash64 {
@@ -222,8 +222,12 @@ impl<'tcx> TyCtxtExt<'tcx> for TyCtxt<'tcx> {
             .occurs_in_projection(projection_term.args, projection_term.def_id);
           let deep_check = || {
             let prj_ply_trait_ref = predicate.kind().rebind(pp);
+            // NOTE, This is the inlined version of the prior `required_poly_trait_ref` function.
+            // See commit `https://github.com/rust-lang/rust/commit/7540306a4994df05e4aca27130b2757e55000ac7#diff-212d862294e979a5e170dac73a0c4f4cb73836fe91cab8ef22e0d829cf6e29dfL687`
             let poly_supertrait_ref =
-              prj_ply_trait_ref.required_poly_trait_ref(self.tcx);
+              prj_ply_trait_ref.map_bound(|predicate| {
+                predicate.projection_term.trait_ref(self.tcx)
+              });
             // Check whether `poly_supertrait_ref` is a supertrait of `self.tr`.
             // HACK FIXME: this is too simplistic, it's unsound to check
             // *just* that the `self_ty`s are equivalent and that the `def_id` is
@@ -277,16 +281,16 @@ impl<'tcx> TyCtxtExt<'tcx> for TyCtxt<'tcx> {
       )
     };
 
-    let from_sig = |sig: &ty::PolyFnSig| Some(sig.inputs().skip_binder().len());
-
     match ty.kind() {
       // References to closures are also callable
       ty::TyKind::Ref(_, ty, _) | ty::TyKind::RawPtr(ty, _) => {
         self.function_arity(*ty)
       }
       ty::TyKind::FnDef(def_id, ..) => from_def_id(def_id),
-      ty::TyKind::FnPtr(sig) => from_sig(sig),
-      ty::TyKind::Closure(_, args) => from_sig(&args.as_closure().sig()),
+      ty::TyKind::FnPtr(sig, ..) => Some(sig.inputs().skip_binder().len()),
+      ty::TyKind::Closure(_, args) => {
+        Some(args.as_closure().sig().inputs().skip_binder().len())
+      }
       ty::TyKind::CoroutineClosure(_, args) => {
         if let ty::TyKind::Tuple(tys) = args
           .as_coroutine_closure()
@@ -326,7 +330,7 @@ impl PredicateObligationExt for PredicateObligation<'_> {
     let source_map = tcx.sess.source_map();
     let hir = tcx.hir();
 
-    let hir_id = hir.body_owner(body_id);
+    let hir_id = tcx.hir_body_owner(body_id);
     let body_span = hir.span(hir_id);
 
     // Backup span of the DefId
@@ -396,7 +400,7 @@ impl<'tcx> PredicateExt<'tcx> for Predicate<'tcx> {
       )) => ty.is_ty_var(),
       ty::PredicateKind::Clause(ty::ClauseKind::Projection(proj)) => {
         proj.self_ty().is_ty_var()
-          || proj.term.ty().map_or(false, ty::Ty::is_ty_var)
+          || proj.term.as_type().is_some_and(ty::Ty::is_ty_var)
       }
       _ => false,
     }
@@ -482,5 +486,22 @@ impl<'tcx, T: TypeVisitable<TyCtxt<'tcx>>> VarCounterExt<'tcx> for T {
     let mut folder = TyVarCounterVisitor { count: 0 };
     self.visit_with(&mut folder);
     folder.count
+  }
+}
+
+impl<'tcx> ImplCandidateExt<'tcx> for ImplCandidate<'tcx> {
+  fn is_inductive(&self, tcx: TyCtxt<'tcx>) -> bool {
+    // The `DefId` of the trait being implemented
+    let trait_id = self.trait_ref.def_id;
+    for (p, _) in tcx.predicates_of(self.impl_def_id).predicates {
+      // Check if the trait in bound `Ty: Trait` matches the trait being implemented
+      if let Some(ptrait_ref) = p.as_trait_clause()
+        && ptrait_ref.def_id() == trait_id
+      {
+        return true;
+      }
+    }
+
+    false
   }
 }

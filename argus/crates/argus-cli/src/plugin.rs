@@ -137,7 +137,7 @@ impl RustcPlugin for ArgusPlugin {
         exit(0);
       }
       AC::Obligations { .. } | AC::Tree { .. } | AC::Bundle => {}
-    };
+    }
 
     let file = match &args.command {
       AC::Tree { file, .. } => Some(file),
@@ -257,15 +257,11 @@ pub fn run_with_callbacks(
 
   log::debug!("Running command with callbacks: {args:?}");
 
-  let compiler = rustc_driver::RunCompiler::new(&args, callbacks);
-
-  log::debug!("Building compiler ...");
-
-  // Argus works even when the compiler exits with an error.
   #[allow(unused_must_use)]
-  let _ = compiler
-    .run()
-    .map_err(|_| ArgusError::BuildError { range: None });
+  rustc_driver::catch_fatal_errors(move || {
+    rustc_driver::run_compiler(&args, callbacks);
+  })
+  .map_err(|_| ArgusError::BuildError { range: None });
 
   Ok(())
 }
@@ -285,66 +281,59 @@ impl<A: ArgusAnalysis, T: ToTarget, F: FnOnce() -> Option<T>>
     }
 
     config.psess_created = Some(Box::new(|sess| {
-      let fallback_bundle = rustc_errors::fallback_fluent_bundle(
-        rustc_driver::DEFAULT_LOCALE_RESOURCES.to_vec(),
-        false,
-      );
-
-      sess.dcx.make_silent(fallback_bundle, None, false);
+      sess.dcx().make_silent(None, false);
     }));
   }
 
-  fn after_expansion<'tcx>(
+  fn after_expansion(
     &mut self,
     _compiler: &rustc_interface::interface::Compiler,
-    queries: &'tcx rustc_interface::Queries<'tcx>,
+    tcx: TyCtxt,
   ) -> rustc_driver::Compilation {
     elapsed("rustc", self.rustc_start);
     let start = Instant::now();
 
-    queries.global_ctxt().unwrap().enter(|tcx| {
-      elapsed("global_ctxt", start);
-      let mut analysis = self.analysis.take().unwrap();
-      let target_file = self.file.as_ref();
+    elapsed("global_ctxt", start);
+    let mut analysis = self.analysis.take().unwrap();
+    let target_file = self.file.as_ref();
 
-      let mut inner = |(_, body)| {
-        if let FileName::Real(RealFileName::LocalPath(p)) =
-          tcx.body_filename(body)
-        {
-          if target_file.map_or(true, |f| f.ends_with(&p)) {
-            log::info!("analyzing {:?}", body);
-            match analysis.analyze(tcx, body) {
-              Ok(v) => Some(v),
-              Err(e) => {
-                log::error!("Error analyzing body {:?} {:?}", body, e);
-                None
-              }
+    let mut inner = |(_, body)| {
+      if let FileName::Real(RealFileName::LocalPath(p)) =
+        tcx.body_filename(body)
+      {
+        if target_file.is_none_or(|f| f.ends_with(&p)) {
+          log::info!("analyzing {:?}", body);
+          match analysis.analyze(tcx, body) {
+            Ok(v) => Some(v),
+            Err(e) => {
+              log::error!("Error analyzing body {:?} {:?}", body, e);
+              None
             }
-          } else {
-            log::debug!("Skipping file {:?} due to target {:?}", p, self.file);
-            None
           }
         } else {
+          log::debug!("Skipping file {:?} due to target {:?}", p, self.file);
           None
         }
-      };
+      } else {
+        None
+      }
+    };
 
-      self.result = match (self.compute_target.take().unwrap())() {
-        Some(target) => {
-          let target = target.to_target(tcx).expect("Couldn't compute target");
-          let body_span = target.span;
-          fluid_set!(analysis::OBLIGATION_TARGET, target);
+    self.result = match (self.compute_target.take().unwrap())() {
+      Some(target) => {
+        let target = target.to_target(tcx).expect("Couldn't compute target");
+        let body_span = target.span;
+        fluid_set!(analysis::OBLIGATION_TARGET, target);
 
-          find_enclosing_bodies(tcx, body_span)
-            .filter_map(|b| inner((body_span, b)))
-            .collect::<Vec<_>>()
-        }
-        None => find_bodies(tcx)
-          .into_iter()
-          .filter_map(inner)
-          .collect::<Vec<_>>(),
-      };
-    });
+        find_enclosing_bodies(tcx, body_span)
+          .filter_map(|b| inner((body_span, b)))
+          .collect::<Vec<_>>()
+      }
+      None => find_bodies(tcx)
+        .into_iter()
+        .filter_map(inner)
+        .collect::<Vec<_>>(),
+    };
 
     rustc_driver::Compilation::Stop
   }

@@ -14,10 +14,16 @@ use ts_rs::TS;
 use super::ProofNodeIdx;
 
 #[cfg(feature = "testing")]
-pub trait Idx = Copy + PartialEq + Eq + Hash + Debug + Serialize + TS;
+pub trait Idx: Copy + PartialEq + Eq + Hash + Debug + Serialize + TS {}
+
+#[cfg(feature = "testing")]
+impl<T> Idx for T where T: Copy + PartialEq + Eq + Hash + Debug + Serialize + TS {}
 
 #[cfg(not(feature = "testing"))]
-pub trait Idx = Copy + PartialEq + Eq + Hash + Debug + Serialize;
+pub trait Idx: Copy + PartialEq + Eq + Hash + Debug + Serialize {}
+
+#[cfg(not(feature = "testing"))]
+impl<T> Idx for T where T: Copy + PartialEq + Eq + Hash + Debug + Serialize {}
 
 /// Parent child relationships between structures.
 // NOTE: instead of using a generic parameter `I: Idx` it's
@@ -105,7 +111,7 @@ impl TreeTopology {
   }
 
   pub fn is_parent(&self, parent: ProofNodeIdx, child: ProofNodeIdx) -> bool {
-    self.parent.get(&child).map_or(false, |p| *p == parent)
+    self.parent.get(&child).is_some_and(|p| *p == parent)
   }
 
   pub fn is_leaf(&self, node: ProofNodeIdx) -> bool {

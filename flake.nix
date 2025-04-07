@@ -5,7 +5,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=b075bed6925924e7ecc02970eb0800db974cca4e";
+      "github:cognitive-engineering-lab/argus?rev=b74b63826d02743624bc5c8b298de1165900bef1";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
@@ -70,15 +70,15 @@
         run-evaluation = pkgs.writeScriptBin "run-evaluation" ''
           cd argus && ARGUS_DNF_PERF=  cargo test -p argus-cli && cd -
 
-	  node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
-	  node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
-	  node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=depth &&
+          node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
+          node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
+          node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=depth &&
 
           mkdir -p evaluation/data/gen
-	  mv argus/crates/argus-cli/*.csv evaluation/data/gen/
-	  mv *.csv evaluation/data/gen/
-	  # NOTE, compiler data is (partially) hand-tuned, so we copy it
-	  cp evaluation/data/heuristic-precision\[rust\].csv evaluation/data/gen/
+          mv argus/crates/argus-cli/*.csv evaluation/data/gen/
+          mv *.csv evaluation/data/gen/
+          # NOTE, compiler data is (partially) hand-tuned, so we copy it
+          cp evaluation/data/heuristic-precision\[rust\].csv evaluation/data/gen/
         '';
 
         open-evaluation = pkgs.writeScriptBin "open-evaluation" ''
@@ -123,8 +123,18 @@
           #!/bin/bash
           cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
           ln -sf ${pkgs.glibc}/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
-	  /bin/bash
-	'';
+          /bin/bash
+        '';
+
+        publish-image = pkgs.writeScriptBin "publish-image" ''
+          # Arguments:
+          # $1 = Docker image <username>/<repository>
+          # $2 = Docker username
+          # $3 = Docker token/password
+          docker load < "$1.tar.gz"
+          echo "$3" | docker login -u "$2" --password-stdin
+          docker push "$1"
+        '';
 
         dockerImage = pkgs.dockerTools.buildLayeredImage {
           name = "gavinleroy/pldi25-argus-${builtins.elemAt (builtins.split "-" system) 0}";
@@ -161,12 +171,19 @@
               "PYTHON=${python3}"
               "LIBERTINE_PATH=${libertine}/share/fonts"
               "PLAYWRIGHT_BROWSERS_PATH=${playwright-driver.browsers}"
-	      "SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt"
+              "SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt"
             ];
             ExposedPorts."${port}/tcp" = {};
           };
         };
       in {
         packages.default = dockerImage;
+
+        devShell = pkgs.mkShell {
+          buildInputs = [
+            pkgs.docker
+            publish-image
+          ];
+        };
       });
 }

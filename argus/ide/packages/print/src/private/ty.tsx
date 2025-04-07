@@ -26,6 +26,7 @@ import type {
   Polarity,
   PolyExistentialPredicates,
   PolyFnSig,
+  PolyTy,
   Region,
   // biome-ignore lint: lint/suspicious/noShadowRestrictedNames
   Symbol,
@@ -97,6 +98,10 @@ export const PrintBinder = <T,>({
     </>
   );
 };
+
+export const PrintPolyTy = ({ o }: { o: PolyTy }) => (
+  <PrintBinder binder={o} Child={({ value }) => <PrintTy o={value} />} />
+);
 
 export const PrintTy = ({ o }: { o: Ty }) => {
   const tyCtx = useContext(TyCtxt);
@@ -230,6 +235,8 @@ export const PrintTyKind = ({ o }: { o: TyKind }) => {
     return <PrintCoroutineTy o={o.Coroutine} />;
   } else if ("CoroutineWitness" in o) {
     return <PrintCoroutineWitnessTy o={o.CoroutineWitness} />;
+  } else if ("Binder" in o) {
+    return <PrintPolyTy o={o.Binder} />;
   }
 
   throw new Error("Unknown ty kind", o);
@@ -473,9 +480,11 @@ export const PrintInferTy = ({ o }: { o: InferTy }) => {
             ? () => <PrintDefinitionPath o={o.Unnamed} />
             : "SourceInfo" in o
               ? () => <code>{o.SourceInfo}</code>
-              : () => {
-                  throw new Error("Unknown infer ty", o);
-                };
+              : "Named" in o
+                ? () => <PrintSymbol o={o.Named} />
+                : () => {
+                    throw new Error("Unknown infer ty", o);
+                  };
 
   return (
     <Placeholder>
@@ -581,13 +590,13 @@ export const PrintBoundVariableKind = ({ o }: { o: BoundVariableKind }) => {
 
 export const PrintBoundRegionKind = ({ o }: { o: BoundRegionKind }) => {
   // TODO: what do we do in these cases?
-  if ("BrAnon" === o) {
+  if ("Anon" === o) {
     return null;
-  } else if ("BrEnv" === o) {
+  } else if ("ClosureEnv" === o) {
     return null;
   }
-  if ("BrNamed" in o && o.BrNamed[0] !== "'_") {
-    const [name] = o.BrNamed;
+  if ("Named" in o && o.Named[0] !== "'_") {
+    const [name] = o.Named;
     return <PrintSymbol o={name} />;
   }
 };

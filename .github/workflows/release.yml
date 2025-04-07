@@ -1,0 +1,39 @@
+name: release
+
+on:
+  push:
+    branch: 
+      - "main"
+    #tags: "v*.*.*"
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+            output_name: amd64
+          - os: ['self-hosted', 'ARM64']
+            arch: aarch64
+            output_name: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/flakehub-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
+
+      - name: Build Docker Image
+        run: nix build .
+
+      - name: Export Docker Image
+        run: |
+          cp -L result pldi25-argus-${{ matrix.output_name }}.tar.gz
+          nix develop . --command publish-image pldi25-argus-${{ matrix.output_name }} ${{ secrets.DOCKERHUB_USERNAME }} ${{ secrets.DOCKERHUB_PASSWORD }}
+      #
+      # - name: Publish Release Artifact
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: pldi25-argus-${{ matrix.output_name }}.tar.gz

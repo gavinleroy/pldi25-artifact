@@ -28,3 +28,6 @@ bindings/
 data/
 *.csv
 result
+
+# When testing nix builds
+result
