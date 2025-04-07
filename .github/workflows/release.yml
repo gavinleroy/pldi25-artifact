@@ -25,6 +25,10 @@ jobs:
       - uses: DeterminateSystems/flakehub-cache-action@main
       - uses: DeterminateSystems/flake-checker-action@main
 
+      # For debugging
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Build Docker Image
         run: nix build .
 
