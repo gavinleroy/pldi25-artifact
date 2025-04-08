@@ -25,26 +25,14 @@ jobs:
       - uses: DeterminateSystems/flakehub-cache-action@main
       - uses: DeterminateSystems/flake-checker-action@main
 
-      - name: Check Docker Config
-        run: |
-          echo "Current user: $(whoami)"
-          ls -la ~/.docker
-          cat ~/.docker/config.json || echo "No config.json found"
-
-      # For debugging
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Build Docker Image
-        env:
-          DOCKER_CONFIG: ~/.docker
-        run: nix build . --option sandbox false
+        run: nix build .
 
       - name: Export Docker Image
         run: |
           cp -L result pldi25-argus-${{ matrix.output_name }}.tar.gz
           nix develop . --command publish-image pldi25-argus-${{ matrix.output_name }} ${{ secrets.DOCKERHUB_USERNAME }} ${{ secrets.DOCKERHUB_PASSWORD }}
-      #
+
       # - name: Publish Release Artifact
       #   uses: softprops/action-gh-release@v2
       #   with:
