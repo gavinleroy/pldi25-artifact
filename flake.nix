@@ -5,7 +5,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=b74b63826d02743624bc5c8b298de1165900bef1";
+      "github:cognitive-engineering-lab/argus?rev=383202c1774d4de617cf7a5fe88963102b86e9ac";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
@@ -41,38 +41,33 @@
         dockerEnv = with pkgs; [
           argus-cli
           codium-with-argus
-
           on-startup
           run-evaluation
           open-evaluation
           open-workspace
           open-tutorial
-
+          julia-bin
           pkg-config
           coreutils
           binutils
-	  cacert
+          cacert
           bashInteractive
           gnused
-
-          julia-bin
           alsa-lib.dev
           udev.dev
-
           # CLI DEPS
           gcc
           toolchain
-
           # IDE DEPS
-          nodejs_20
+          nodejs_22
         ];
 
         run-evaluation = pkgs.writeScriptBin "run-evaluation" ''
           cd argus && ARGUS_DNF_PERF=  cargo test -p argus-cli && cd -
 
-          node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
-          node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
-          node ${argus-ide}/lib/packages/evaluation/dist/evaluation.cjs -h --rankBy=depth &&
+          node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
+          node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
+          node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=depth &&
 
           mkdir -p evaluation/data/gen
           mv argus/crates/argus-cli/*.csv evaluation/data/gen/

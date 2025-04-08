@@ -34,10 +34,10 @@ jobs:
       # For debugging
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        env:
-          DOCKER_PWORD: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker Image
+        env:
+          DOCKER_CONFIG: ~/.docker
         run: nix build . --option sandbox false
 
       - name: Export Docker Image
