@@ -103,7 +103,7 @@
 
         open-workspace = pkgs.writeScriptBin "open-workspace" ''
           mkdir -p ~/root
-          codium --no-sandbox --user-data-dir=~/root argus/examples/bevy/src/main.rs argus/examples/bevy
+          codium --no-sandbox --user-data-dir=~/root argus/examples/hello-server/src/main.rs argus/examples/hello-server
         '';
 
         codium-with-argus = pkgs.vscode-with-extensions.override {

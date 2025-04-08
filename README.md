@@ -57,3 +57,24 @@ open-evaluation
 All numbers and figures should be the same except the performance numbers gathered in the container, these will vary.
 
 ![Screenshot 2025-03-18 at 23 44 30](https://github.com/user-attachments/assets/ee2d1dc7-7bb0-4bab-bda9-6eb04fabcb06)
+
+### Evaluating the IDE Extension
+
+We distribute Argus as a VS Code extension available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) and the [Open VSX Registry](https://open-vsx.org/extension/gavinleroy/argus). As of last week there have been over 1.6k downloads.
+
+> We **strongly** suggest installing the extension on your local machine and opening up one of our [example programs.](./argus/examples/hello-server)
+
+Alternatively, and not recommended, the docker image already includes an instance of [VSCodium](https://vscodium.com/) with Argus pre-installed. Run the command  
+
+```bash
+```bash
+open-workspace
+```
+
+that will launch vscodium on the example workspace.
+
+**There is a caveat to the above.** You must setup X11 forwarding on your host machine in order to see and interact with the GUI window. We have tested this with MacOS, but the process is neither straightforward nor equivalent on all machines. Again, we strongly suggest installing the extension on your local machine. Here are instructions for setting up X11 forwarding if you really want to try:
+
+- [MacOS](https://gist.github.com/sorny/969fe55d85c9b0035b0109a31cbcb088)
+- [Linux](https://www.baeldung.com/linux/docker-container-gui-applications)
+- [Windows](https://medium.com/@potatowagon/how-to-use-gui-apps-in-linux-docker-container-from-windows-host-485d3e1c64a3)
