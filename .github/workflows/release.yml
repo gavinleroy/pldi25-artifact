@@ -41,4 +41,5 @@ jobs:
       - name: Publish Release Artifact
         uses: softprops/action-gh-release@v2
         with:
-          files: *.tar.gz
+          files: |
+            *.tar.gz

@@ -67,10 +67,12 @@
           cargo-watch
         ];
 
+        pnpm = pkgs.pnpm_9;
+        nodejs = pkgs.nodejs_22;
         ide-deps = with pkgs; [
           depot-js.packages.${system}.default
-          nodejs_20
-          pnpm_9
+          nodejs
+          pnpm
           biome
           vsce
         ];
@@ -95,11 +97,6 @@
             CARGO_HOME="${placeholder "out"}/.cargo";
           });
 
-          preBuild = ''
-            export PATH="$PATH:$PWD/scripts"
-            patchShebangs .
-          '';
-
           postBuild = ''
             cargo make init-bindings
           '';
@@ -110,6 +107,7 @@
           '';
         };
 
+        # FIXME we need to manage the pnpm deps with Nix
         archiveBase = "argus-${version}";
         packageArgusWithExt = ext: ''
           cp ${argus-cli}/lib/bindings.ts ide/packages/common/src/bindings.ts
@@ -117,32 +115,53 @@
           vsce package --allow-unused-files-pattern -o ${archiveBase}.${ext}
         '';
 
-        argus-ide = pkgs.stdenv.mkDerivation {
-          name = "argus-ide";
+        argus-ide = pkgs.stdenv.mkDerivation (finalAttrs: {
+          pname = "argus-ide";
           inherit version;
           src = pkgs.lib.cleanSource ./.;
-          nativeBuildInputs = native-deps ++ ide-deps;
+          nativeBuildInputs = native-deps ++ ide-deps ++ [
+            pnpm.configHook
+          ];
           env = env-vars;
+
+          pnpmWorkspaces = [
+            "@argus/common"
+            "@argus/evaluation"
+            "@argus/itests"
+            "@argus/panoptes"
+            "@argus/print"
+            "@argus/system"
+            "argus" # The extension
+          ];
+          pnpmRoot = "ide";
+          pnpmDeps = pnpm.fetchDeps {
+            inherit (finalAttrs) pname version src pnpmWorkspaces;
+            hash = "sha256-j364V5JhDS78fy6hzQPDbzhzG/s0ERe8dL0zc7hzwhE=";
+            sourceRoot = "${finalAttrs.src.name}/ide";
+          };
+
           buildPhase = packageArgusWithExt "zip";
           installPhase = ''
             mkdir -p $out/share/vscode/extensions
+            mkdir -p $out/packages
             mv ${archiveBase}.zip $out/share/vscode/extensions/
-            cd ../../../
-            cp -LR ide $out/lib
+            cd ../
+            cp -LR evaluation $out/packages/evaluation 
+            cp -LR extension $out/packages/extension
           '';
-        };
+        });
 
         argus-extension = pkgs.vscode-utils.buildVscodeExtension rec {
           name = "argus-ide";
-          vscodeExtPublisher = "gavinleroy";
           inherit version;
+          vscodeExtPublisher = "gavinleroy";
           src = "${argus-ide}/share/vscode/extensions/${archiveBase}.zip";
           vscodeExtName = name;
           vscodeExtUniqueId = "gavinleroy.argus";
         };
 
         argus-book = pkgs.stdenv.mkDerivation {
-          name = "argus-book";
+          pname = "argus-book";
           inherit version;
           src = pkgs.lib.cleanSource ./book;
           buildInputs = book-deps;
@@ -160,9 +179,9 @@
         };
 
         ci-check = pkgs.writeScriptBin "ci-check" ''
-          cargo fmt --check
-          cargo clippy
-          codespell .
+          cargo fmt --check &&
+          cargo clippy -- -D warnings &&
+          codespell . &&
           cargo test
         '';
 
