@@ -19,6 +19,8 @@ jobs:
             arch: aarch64
             output_name: arm64
     runs-on: ${{ matrix.os }}
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/pldi25-argus-${{ matrix.output_name }}
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
@@ -30,8 +32,11 @@ jobs:
 
       - name: Export Docker Image
         run: |
-          cp -L result pldi25-argus-${{ matrix.output_name }}.tar.gz
-          nix develop . --command publish-image pldi25-argus-${{ matrix.output_name }} ${{ secrets.DOCKERHUB_USERNAME }} ${{ secrets.DOCKERHUB_PASSWORD }}
+          cp -L result "$IMAGE_NAME.tar.gz"
+          nix develop . \
+            --command publish-image "$IMAGE_NAME" \
+            ${{ secrets.DOCKERHUB_USERNAME }} \
+            ${{ secrets.DOCKERHUB_PASSWORD }}
 
       # - name: Publish Release Artifact
       #   uses: softprops/action-gh-release@v2
