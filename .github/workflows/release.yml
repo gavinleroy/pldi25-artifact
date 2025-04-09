@@ -28,15 +28,12 @@ jobs:
       - uses: DeterminateSystems/flake-checker-action@main
 
       - name: Build Docker Image
-        run: nix build .
+        run: nix build . --verbose --show-trace --print-build-logs
 
       - name: Export Docker Image
         run: |
           cp -L result "$IMAGE_NAME.tar.gz"
-          nix develop . \
-            --command publish-image "$IMAGE_NAME" \
-            ${{ secrets.DOCKERHUB_USERNAME }} \
-            ${{ secrets.DOCKERHUB_PASSWORD }}
+          nix develop . --verbose --show-trace --print-build-logs --command publish-image "$IMAGE_NAME" ${{ secrets.DOCKERHUB_USERNAME }} ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Publish Release Artifact
         uses: softprops/action-gh-release@v2
