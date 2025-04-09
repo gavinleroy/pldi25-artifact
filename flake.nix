@@ -5,7 +5,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=2c00e4c2d781777629222dd99c065ba3f29b97f7";
+      "github:cognitive-engineering-lab/argus?rev=c23e56ddc58cf40785e7d02e3b8296e829bbb3be";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
