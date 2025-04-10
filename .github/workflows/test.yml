@@ -1,0 +1,24 @@
+name: test
+
+on:
+  push:
+    branch: "main"
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-22.04
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/pldi25-argus-${{ matrix.output_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/flakehub-cache-action@main
+      - uses: DeterminateSystems/flake-checker-action@main
+
+      - name: Debug Session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 45
+
+      - name: Build Docker Image
+        run: nix build .
