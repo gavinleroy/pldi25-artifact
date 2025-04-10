@@ -8,17 +8,17 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1744223246,
-        "narHash": "sha256-tvpH/LWpOSezR+c/Zl9SHNEuUQdBiqi+0oVXtFSv+6M=",
+        "lastModified": 1744304150,
+        "narHash": "sha256-yltoAlKCP7rIXm422YuPRHMBvrbQqW3TgxrAvUle/A4=",
         "owner": "cognitive-engineering-lab",
         "repo": "argus",
-        "rev": "c23e56ddc58cf40785e7d02e3b8296e829bbb3be",
+        "rev": "16808c4ad711bc56a2c707269e868a4538c4ca15",
         "type": "github"
       },
       "original": {
         "owner": "cognitive-engineering-lab",
         "repo": "argus",
-        "rev": "c23e56ddc58cf40785e7d02e3b8296e829bbb3be",
+        "rev": "16808c4ad711bc56a2c707269e868a4538c4ca15",
         "type": "github"
       }
     },
@@ -120,11 +120,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1744163672,
-        "narHash": "sha256-zBLU3DFTidm9EmrZJINrlxdjArjTJLEsvEZNSf643d0=",
+        "lastModified": 1744251395,
+        "narHash": "sha256-M44pYhso6/I8ScfXFNA9cG8kZHrEXPNJTcdZO/563bE=",
         "owner": "nix-community",
         "repo": "nix-vscode-extensions",
-        "rev": "a023e5f0c39130b0843092882c7c3cca414729c0",
+        "rev": "d316ccee4ce2bcabea44e04492b0a464e8919165",
         "type": "github"
       },
       "original": {
@@ -261,11 +261,11 @@
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
-        "lastModified": 1744166053,
-        "narHash": "sha256-mpI7OzFwp+fUeDtZYQbVZ2YmtxTN2UNrrOwbYD27xKU=",
+        "lastModified": 1744252416,
+        "narHash": "sha256-Vrs2GxaL0tLi9GCIUrutHgPSr+g7GYCetu7argsNrB4=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "896158be1835589db6f42f45ef0a49b8b492cc66",
+        "rev": "2af83121f9d2c5281796e60e2b048906a84b9fac",
         "type": "github"
       },
       "original": {

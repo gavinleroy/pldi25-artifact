@@ -3,6 +3,7 @@ name: release
 on:
   push:
     tags: "v*"
+    branch: "main"
 
 jobs:
   build-and-release:
@@ -31,7 +32,9 @@ jobs:
       - name: Export Docker Image
         run: |
           cp -L result "$IMAGE_NAME.tar.gz"
-          nix develop . --verbose --show-trace --print-build-logs --command publish-image "$IMAGE_NAME" ${{ secrets.DOCKERHUB_USERNAME }} ${{ secrets.DOCKERHUB_PASSWORD }}
+          docker load < "$IMAGE_NAME.tar.gz"
+          echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push "$IMAGE_NAME"
 
       - name: Publish Release Artifact
         uses: softprops/action-gh-release@v2

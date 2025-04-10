@@ -5,7 +5,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=c23e56ddc58cf40785e7d02e3b8296e829bbb3be";
+      "github:cognitive-engineering-lab/argus?rev=16808c4ad711bc56a2c707269e868a4538c4ca15";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
@@ -32,8 +32,21 @@
           };
         };
 
-        inherit (argus.packages.${system}) argus-cli argus-ide argus-extension argus-book;
+        argus-original = argus.packages.${system};
+        inherit (argus-original) argus-cli argus-book;
         toolchain = pkgs.rust-bin.fromRustupToolchainFile "${argus}/rust-toolchain.toml";
+
+        argus-ide = argus-original.argus-ide.overrideAttrs (oldAttrs: {
+          pnpmDeps = pkgs.pnpm.fetchDeps {
+            inherit (oldAttrs) pname version src pnpmWorkspaces;
+            hash = "sha256-7uT1Xc/xf2IiEWwVxyJM+O+8QwySLGlPFlqx6Ye+MIM=";
+            sourceRoot = "${oldAttrs.src.name}/ide";
+          };
+        });
+
+        argus-extension = argus-original.argus-extension.overrideAttrs (oldAttrs: {
+          src = "${argus-ide}/share/vscode/extensions/argus-v0.1.15.zip";
+        });
 
         host = "0.0.0.0";
         port = "8888";
@@ -55,10 +68,8 @@
           gnused
           alsa-lib.dev
           udev.dev
-          # CLI DEPS
           gcc
           toolchain
-          # IDE DEPS
           nodejs_22
         ];
 
@@ -72,7 +83,7 @@
           mkdir -p evaluation/data/gen
           mv argus/crates/argus-cli/*.csv evaluation/data/gen/
           mv *.csv evaluation/data/gen/
-          # NOTE, compiler data is (partially) hand-tuned, so we copy it
+          # NOTE compiler data is (partially) hand-tuned, so we copy it
           cp evaluation/data/heuristic-precision\[rust\].csv evaluation/data/gen/
         '';
 
@@ -94,6 +105,7 @@
         open-tutorial = pkgs.writeScriptBin "open-tutorial" ''
           cd ${argus-book}
           ${pkgs.python3}/bin/python3 -m http.server ${port}
+          cd -
         '';
 
         open-workspace = pkgs.writeScriptBin "open-workspace" ''
@@ -109,9 +121,18 @@
           ];
         };
 
-        evaluation-source = builtins.path {
-          name = "evaluation-source";
-          path = ./evaluation;
+        study-source = pkgs.fetchFromGitHub {
+          owner = "gavinleroy";
+          repo = "argus-study";
+          rev = "8fade9b499bf6268aae04626659149b3056a7948";
+          hash = "sha256-fBJ61drnt3es2CXNdrDDMs9ogOpjaeEZXYO/Y3OAYZ0=";
+        };
+
+        evaluation-source = pkgs.fetchFromGitHub {
+          owner = "gavinleroy";
+          repo = "argus-eval";
+          rev = "4eee678c6a3b4ec637505d11437ffc7ca80a696f";
+          hash = "sha256-CtYpYQjDTXaxoopA9NP/UyM45H6jSIjAX2PrvfY9NMs=";
         };
 
         on-startup = pkgs.writeScriptBin "on-startup" ''
@@ -119,16 +140,6 @@
           cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
           ln -sf ${pkgs.glibc}/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
           /bin/bash
-        '';
-
-        publish-image = pkgs.writeScriptBin "publish-image" ''
-          # Arguments:
-          # $1 = Docker image <username>/<repository>
-          # $2 = Docker username
-          # $3 = Docker token/password
-          docker load < "$1.tar.gz"
-          echo "$3" | docker login -u "$2" --password-stdin
-          docker push "$1"
         '';
 
         dockerImage = pkgs.dockerTools.buildLayeredImage {
@@ -143,9 +154,11 @@
 
           extraCommands = ''
             mkdir -p argus
+            mkdir -p argus-study
             mkdir -p evaluation
             cp -R ${argus}/* argus/
-            cp -R ${evaluation-source}/* evaluation/
+            cp -R ${study-source}/* argus-study/
+            cp -R ${evaluation-source}/evaluation evaluation
           '';
 
           config = {
@@ -173,12 +186,5 @@
         };
       in {
         packages.default = dockerImage;
-
-        devShell = pkgs.mkShell {
-          buildInputs = [
-            pkgs.docker
-            publish-image
-          ];
-        };
       });
 }
