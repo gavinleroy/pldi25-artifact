@@ -3,7 +3,7 @@
 This artifact contains the codebase, data, and scripts required to reproduce every part of the paper. A rough overview, in order of the paper's sections for which we've provided an artifact to verify:
 
 - Section 4: Implementation
-  The code for the [VSCode extension `Argus`](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) is provided in the `argus` directory. The below instructions include a step for compiling the CLI and running it on sample data, but see the README in that directory for instructions on how to install and use the Argus VS Code extension.
+  The code for the [VSCode extension `Argus`](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) is provided in the `argus` directory. The below instructions include a step for compiling the CLI and running it on sample data, but see the README in that directory for instructions on how to install and use the Argus VSCode extension.
 
 - Section 5: Evaluation
   - 5.1 User Study
@@ -60,13 +60,12 @@ All numbers and figures should be the same except the performance numbers gather
 
 ### Evaluating the IDE Extension
 
-We distribute Argus as a VS Code extension available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) and the [Open VSX Registry](https://open-vsx.org/extension/gavinleroy/argus). As of last week there have been over 1.6k downloads.
+We distribute Argus as a VSCode extension available on the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) and the [Open VSX Registry](https://open-vsx.org/extension/gavinleroy/argus). As of last week there have been over 1.6k downloads.
 
 > We **strongly** suggest installing the extension on your local machine and opening up one of our [example programs.](./argus/examples/hello-server)
 
 Alternatively, and not recommended, the docker image already includes an instance of [VSCodium](https://vscodium.com/) with Argus pre-installed. Run the command  
 
-```bash
 ```bash
 open-workspace
 ```
