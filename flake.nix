@@ -33,20 +33,20 @@
         };
 
         argus-original = argus.packages.${system};
-        inherit (argus-original) argus-cli argus-book;
+        inherit (argus-original) argus-cli argus-book argus-ide argus-extension;
         toolchain = pkgs.rust-bin.fromRustupToolchainFile "${argus}/rust-toolchain.toml";
 
-        argus-ide = argus-original.argus-ide.overrideAttrs (oldAttrs: {
-          pnpmDeps = pkgs.pnpm.fetchDeps {
-            inherit (oldAttrs) pname version src pnpmWorkspaces;
-            hash = "sha256-7uT1Xc/xf2IiEWwVxyJM+O+8QwySLGlPFlqx6Ye+MIM=";
-            sourceRoot = "${oldAttrs.src.name}/ide";
-          };
-        });
-
-        argus-extension = argus-original.argus-extension.overrideAttrs (oldAttrs: {
-          src = "${argus-ide}/share/vscode/extensions/argus-v0.1.15.zip";
-        });
+        # argus-ide = argus-original.argus-ide.overrideAttrs (oldAttrs: {
+        #   pnpmDeps = pkgs.pnpm.fetchDeps {
+        #     inherit (oldAttrs) pname version src pnpmWorkspaces;
+        #     hash = "sha256-7uT1Xc/xf2IiEWwVxyJM+O+8QwySLGlPFlqx6Ye+MIM=";
+        #     sourceRoot = "${oldAttrs.src.name}/ide";
+        #   };
+        # });
+        #
+        # argus-extension = argus-original.argus-extension.overrideAttrs (oldAttrs: {
+        #   src = "${argus-ide}/share/vscode/extensions/argus-v0.1.15.zip";
+        # });
 
         host = "0.0.0.0";
         port = "8888";
