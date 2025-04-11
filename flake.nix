@@ -126,8 +126,7 @@
 
         on-startup = pkgs.writeScriptBin "on-startup" ''
           #!/bin/bash
-          #cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
-          #ln -sf ${pkgs.glibc}/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
+          cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
           /bin/bash
         '';
 
@@ -148,7 +147,6 @@
             cp -R ${argus}/* argus/
             cp -R ${study-source}/* argus-study/
             cp -R ${evaluation-source}/evaluation evaluation
-            cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
           '';
 
           config = {
