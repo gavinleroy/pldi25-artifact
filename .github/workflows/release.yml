@@ -28,9 +28,8 @@ jobs:
 
       - name: Export Docker Image
         run: |
-          cp -L result gavinleroy/pldi25-argus-${{ matrix.output_name }}.tar.gz
           docker load < result
-          echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           docker push gavinleroy/pldi25-argus-${{ matrix.output_name }}
 
       - name: Publish Release Artifact
