@@ -1,11 +1,12 @@
 {
+#eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI3MDc5ZDQzZC01N2E3LTQ1NzQtYWE2NS00Nzc5MjhkNDkwZTciLCJzY29wZXMiOiJjYWNoZSJ9.neEzdaB5TYRMIVTPidSPGW50cWGlkaNMlmXEiLaAN_c
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/80a3e9ca766a82fcec24648ab3a771d5dd8f9bf2";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=16808c4ad711bc56a2c707269e868a4538c4ca15";
+      "github:cognitive-engineering-lab/argus?rev=2cb5898ee5fb13621e73a49456cb2a9770ca2a82";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
@@ -35,18 +36,6 @@
         argus-original = argus.packages.${system};
         inherit (argus-original) argus-cli argus-book argus-ide argus-extension;
         toolchain = pkgs.rust-bin.fromRustupToolchainFile "${argus}/rust-toolchain.toml";
-
-        # argus-ide = argus-original.argus-ide.overrideAttrs (oldAttrs: {
-        #   pnpmDeps = pkgs.pnpm.fetchDeps {
-        #     inherit (oldAttrs) pname version src pnpmWorkspaces;
-        #     hash = "sha256-7uT1Xc/xf2IiEWwVxyJM+O+8QwySLGlPFlqx6Ye+MIM=";
-        #     sourceRoot = "${oldAttrs.src.name}/ide";
-        #   };
-        # });
-        #
-        # argus-extension = argus-original.argus-extension.overrideAttrs (oldAttrs: {
-        #   src = "${argus-ide}/share/vscode/extensions/argus-v0.1.15.zip";
-        # });
 
         host = "0.0.0.0";
         port = "8888";
@@ -137,8 +126,8 @@
 
         on-startup = pkgs.writeScriptBin "on-startup" ''
           #!/bin/bash
-          cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
-          ln -sf ${pkgs.glibc}/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
+          #cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
+          #ln -sf ${pkgs.glibc}/lib/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
           /bin/bash
         '';
 
@@ -159,6 +148,7 @@
             cp -R ${argus}/* argus/
             cp -R ${study-source}/* argus-study/
             cp -R ${evaluation-source}/evaluation evaluation
+            cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
           '';
 
           config = {
