@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-and-release:
-    name: Build and Release
+    name: Test Build
     strategy:
       matrix:
         include:
