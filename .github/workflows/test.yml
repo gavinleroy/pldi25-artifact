@@ -7,7 +7,14 @@ on:
 jobs:
   build-and-release:
     name: Build and Release
-    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            output_name: amd64
+          - os: ubuntu-22.04-arm
+            output_name: aarch64
+    runs-on: ${{ matrix.os }}
     env:
       IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/pldi25-argus-${{ matrix.output_name }}
     steps:
