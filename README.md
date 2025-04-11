@@ -4,7 +4,7 @@ This artifact contains the codebase, data, and scripts required to reproduce eve
 
 - Section 4: Implementation
 
-  The code for the [VSCode extension `Argus`](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) is provided in the `argus` directory. The below instructions include a step for compiling the CLI and running it on sample data, but see the README in that directory for instructions on how to install and use the Argus VSCode extension.
+  The code for the [VSCode extension `Argus`](https://marketplace.visualstudio.com/items?itemName=gavinleroy.argus) is provided in the `argus` directory. The below instructions include a step for compiling the CLI and running it on sample data, but see the README in that directory for instructions on how to install and use the Argus VSCode extension. (Users would install the extension from the VSCode marketplace, which is what we recommend for reviewers.)
 
 - Section 5: Evaluation
   - 5.1 User Study
@@ -49,6 +49,8 @@ Run the following:
 run-evaluation
 ```
 
+This script gathers local data, which is placed in the `evaluation/data/gen/` directory that is recognized by the Julia notebook in the next step.
+
 ## Analysis Evaluation
 
 If the above worked, then you can compare the local data with the data used in the paper evaluation. The next command will download the Julia dependencies and start a server within the container. After launching, navigate to `localhost:8888` to view the full notebook.
@@ -89,7 +91,7 @@ Search for "Argus" in the extensions panel, and click install --- the current ve
 
 Open the `src/main.rs` file and the extension should install. We have an [online tutorial](https://cel.cs.brown.edu/argus/) for debugging the `hello-server` example if you'd like to follow along.
 
-> The tutorial is also available within the docker container. You'd have to launch the container again (see [Getting Started](#getting-started)), then run the command: `open-tutorial`. Navigate to [`localhost:8888`](https://localhost:8888) to read the tutorial.
+> The tutorial is also available within the docker container. You'll have to launch the container again (see [Getting Started](#getting-started)), then run the command: `open-tutorial`. Navigate to [`localhost:8888`](https://localhost:8888) to read the tutorial.
 
 ### IDE Evaluation (Within Docker)
 
@@ -112,3 +114,7 @@ Iff you've set everything up correctly, the following command will launch vscodi
 ```bash
 open-workspace
 ```
+
+You can follow along with our online tutorial to see Argus in action: [online tutorial](https://cel.cs.brown.edu/argus/).
+
+> The tutorial is also available within the docker container. You'll have to launch the container again (see [Getting Started](#getting-started)), then run the command: `open-tutorial`. Navigate to [`localhost:8888`](https://localhost:8888) to read the tutorial.

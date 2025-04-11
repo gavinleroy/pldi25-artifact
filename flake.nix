@@ -74,7 +74,8 @@
           mkdir -p evaluation/data/gen
           mv argus/crates/argus-cli/*.csv evaluation/data/gen/
           mv *.csv evaluation/data/gen/
-          # NOTE compiler data is (partially) hand-tuned, so we copy it
+          # NOTE the compiler data was hand-tuned an compared between
+          # authors, but Julia will expect it to be present in the `gen` directory as well.
           cp evaluation/data/heuristic-precision\[rust\].csv evaluation/data/gen/
         '';
 
