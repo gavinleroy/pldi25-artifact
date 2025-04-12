@@ -34,7 +34,8 @@ jobs:
 
       - name: Publish Docker Image
         run: |
-          docker load < result
+          docker image load --input result
+          docker image tag gavinleroy/pldi25-argus-${{ matrix.output_name }} gavinleroy/pldi25-argus-${{ matrix.output_name }}:latest
           docker push gavinleroy/pldi25-argus-${{ matrix.output_name }}:latest
 
       - name: Publish Release Artifact
