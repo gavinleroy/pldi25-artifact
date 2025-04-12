@@ -27,6 +27,7 @@ jobs:
         run: |
           nix build . -L
           cp -L result pldi25-argus-${{ matrix.output_name }}.tar.gz
+          nix store gc
 
       - name: Log in to Docker Hub
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
@@ -36,7 +37,7 @@ jobs:
 
       - name: Publish Docker Image
         run: |
-          docker image load --input result
+          docker image < pldi25-argus-${{ matrix.output_name }}.tar.gz
           docker push gavinleroy/pldi25-argus-${{ matrix.output_name }}:latest
 
       - name: Publish Release Artifact

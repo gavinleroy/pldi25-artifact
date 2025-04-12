@@ -57,16 +57,14 @@
           pkg-config
           coreutils
           binutils
-          cacert
-          bashInteractive
           gnused
+          cacert
+          gcc
+          bashInteractive
           alsa-lib.dev
           udev.dev
-          gcc
           toolchain
           nodejs_22
-          pnpm_9
-          biome
         ];
 
         run-evaluation = pkgs.writeScriptBin "run-evaluation" ''

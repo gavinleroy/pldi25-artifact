@@ -17,7 +17,16 @@ This artifact contains the codebase, data, and scripts required to reproduce eve
 
 The results in Section 5 for the user study are fully reproducible; the numbers shown in the Julia Notebook should match those in the paper.
 
-> :warning: Running the performance analysis for the inertia analysis within docker will not produce exact numbers.
+> :warning: Note: running the performance analysis for the inertia analysis within docker will not produce exact numbers.
+
+The full instructions are below, but to summarize, only two commands are needed to test the artifact end to end:
+
+1. `run-evaluation`, to build the tool and run tests on the included example crates.
+2. `open-evaluation`, to start a server to the evaluation notebook that contains all the data and code for the analysis.
+
+Two additional commands are available: `open-tutorial` and `open-workspace`. The former serves our published tutorial to `localhost:8888`, and the latter opens a VSCodium instance with Argus pre-installed. These two aren't necessary, but are mentioned later in the instructions.
+
+> All commands included in the Docker image are just bash scripts. If they feel like black boxes, run `which <CMD NAME>` and `cat` the contents of the file to inspect what they do.
 
 ## Getting Started
 
@@ -39,7 +48,7 @@ docker run --name argus-image -p 8888:8888 -it gavinleroy/pldi25-argus-<ARCH>
 
 ## Tool Evaluation
 
-This step will verify that the code artifacts build and run. The below command will compile and run the tool on the included example workspaces; these are the same workspaces used to gather data for Figure 11 (Section 5.2.2) in the paper. The data gathered in this step will be piped into the analysis notebook, which you will look at in the [next step](#analysis-evaluation).
+This step will verify that the code artifacts *build* and *run*. The below command will compile and run the tool on the included example workspaces; these are the same workspaces used to gather data for Figure 11 (Section 5.2.2) in the paper. The data gathered in this step will be piped into the analysis notebook, which you will look at in the [next step](#analysis-evaluation).
 
 > :warning: stderr will have many lines that start with `MISSING` or `ERROR`, but if the process exits with status `0` then there were no actual errors --- it's just a chatty script.
 
@@ -55,7 +64,7 @@ This script gathers local data, which is placed in the `evaluation/data/gen/` di
 
 If the above worked, then you can compare the local data with the data used in the paper evaluation. The next command will download the Julia dependencies and start a server within the container. After launching, navigate to `localhost:8888` to view the full notebook.
 
-> **NOTE, navigate to the URL provided in the command output. The screenshot below shows what this will look like**
+> **Note, navigate to the URL provided in the command output. The screenshot below shows what this will look like**
 
 Run the following command:
 
@@ -84,7 +93,7 @@ docker cp argus-image:/argus/examples/hello-server /tmp/
 The above copied the `hello-server` project to `/tmp` on your host machine. Change into this project and open VSCode by running:
 
 ```bash
-cd /tmp && code .
+code /tmp/hello-server
 ```
 
 Search for "Argus" in the extensions panel, and click install --- the current version is `v0.1.15`.
