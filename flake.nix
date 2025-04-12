@@ -54,12 +54,12 @@
           open-workspace
           open-tutorial
           julia-bin
-          pkg-config
+          #pkg-config
           coreutils
-          binutils
-          gnused
+          #binutils
+          #gnused
           cacert
-          gcc
+          #gcc
           bashInteractive
           alsa-lib.dev
           udev.dev
