@@ -23,12 +23,12 @@ The results in Section 5 for the user study are fully reproducible; the numbers 
 
 The artifact is packaged as a Docker image, so the only system requirement is [Docker](https://www.docker.com/). [Rust](https://www.rust-lang.org/tools/install) and [VSCode](https://code.visualstudio.com/) (or [VSCodium](https://vscodium.com/)) may also be necessary if you choose to evaluate the IDE extension on your local machine.
 
-All source code, tutorials, and examples, and data analyses are packaged into the Docker image. First, load the `gavinleroy/pldi25-argus-<ARCH>` image from the Zenodo repository (or from the latest [GitHub release](https://github.com/gavinleroy/pldi25-artifact/releases)).
+All source code, tutorials, and examples, and data analyses are packaged into the Docker image. First, load the `pldi25-argus-<ARCH>` image from the Zenodo repository (or from the latest [GitHub release](https://github.com/gavinleroy/pldi25-artifact/releases)).
 
 We distribute two images: `aarch64` built for ARM platforms (e.g., an M1 Mac), and `amd64` built for x86 platforms (everything else). The images are also available on DockerHub [(aarch64)](https://hub.docker.com/repository/docker/gavinleroy/pldi25-argus-aarch64/general)[(amd64)](https://hub.docker.com/repository/docker/gavinleroy/pldi25-argus-amd64/general). Download the image appropriate for your computer, and then run the following, replacing `<ARCH>` with either `aarch64` or `amd64` as appropriate.
 
 ```bash
-docker load -i gavinleroy/pldi25-argus-<ARCH>.tar.gz
+docker load -i pldi25-argus-<ARCH>.tar.gz
 ```
 
 Run the container with the following command, the name and exposed port will be important later:

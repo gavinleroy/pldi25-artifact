@@ -28,4 +28,3 @@ jobs:
       - name: Build Docker Image
         timeout-minutes: 45
         run: nix build . -L
-      - uses: mxschmitt/action-tmate@v3
