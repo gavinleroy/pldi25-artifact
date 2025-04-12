@@ -27,4 +27,6 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
       - name: Build Docker Image
         timeout-minutes: 45
-        run: nix build . -L
+        run: |
+          nix build . -L
+          ls -lh result
