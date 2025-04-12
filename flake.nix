@@ -55,7 +55,7 @@
           open-tutorial
           julia-bin
           #pkg-config
-          coreutils
+          #coreutils
           #binutils
           #gnused
           cacert
@@ -172,7 +172,7 @@
               "PKG_CONFIG_PATH=${udev.dev}/lib/pkgconfig:${alsa-lib.dev}/lib/pkgconfig"
               "PYTHON=${python3}"
               "LIBERTINE_PATH=${libertine}/share/fonts"
-              "PLAYWRIGHT_BROWSERS_PATH=${playwright-driver.browsers}"
+              "PLAYWRIGHT_BROWSERS_PATH=${playwright-chromium.browsers}"
               "SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt"
             ];
             ExposedPorts."${port}/tcp" = {};
