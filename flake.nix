@@ -15,6 +15,11 @@
         overlays = [ (import rust-overlay) nix-vscode-extensions.overlays.default ];
         pkgs = import nixpkgs { inherit system overlays; };
 
+        arch-names = {
+          "x86_64-linux" = "amd64";
+          "aarch64-linux" = "aarch64";
+        };
+
         supported-images = {
           "x86_64-linux" = {
             imageName = "ubuntu";
@@ -134,7 +139,7 @@
         '';
 
         dockerImage = pkgs.dockerTools.buildLayeredImage {
-          name = "gavinleroy/pldi25-argus-${builtins.elemAt (builtins.split "-" system) 0}";
+          name = "gavinleroy/pldi25-argus-${arch-names.${system}}";
           tag = "latest";
           fromImage = pkgs.dockerTools.pullImage (supported-images.${system});
 
