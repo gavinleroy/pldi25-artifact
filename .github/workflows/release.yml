@@ -37,7 +37,7 @@ jobs:
 
       - name: Publish Docker Image
         run: |
-          docker image < pldi25-argus-${{ matrix.output_name }}.tar.gz
+          docker load < pldi25-argus-${{ matrix.output_name }}.tar.gz
           docker push gavinleroy/pldi25-argus-${{ matrix.output_name }}:latest
 
       - name: Publish Release Artifact
