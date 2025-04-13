@@ -44,9 +44,9 @@
 
         browser-cfg = {
           "aarch64-linux" = "chrome-linux";
+          "x86_64-linux" = "chrome-linux";
           "aarch64-darwin" = "chrome-mac"; 
-          "x86_64-linux" = self."aarch64-linux";
-          "x86_64-darwin" = self."aarch64-darwin";
+          "x86_64-darwin" = "chrome-mac";
         };
         chromium-version = browser-cfg.${system};
         chromium-subpath = "chromium-1134/${chromium-version}";
