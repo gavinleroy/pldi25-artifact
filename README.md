@@ -74,6 +74,8 @@ open-evaluation
 
 All numbers and figures should be the same except the performance numbers gathered in the container, these will vary.
 
+> :warning: We have seen Pluto struggle to render the notebook after all packages are installed. If it's been more than 20 minutes and the notebook hasn't loaded, simply close the browser tab and open it again.
+
 ![Screenshot 2025-03-18 at 23 44 30](https://github.com/user-attachments/assets/ee2d1dc7-7bb0-4bab-bda9-6eb04fabcb06)
 
 ## IDE Evaluation
@@ -87,7 +89,7 @@ The extension can be evaluated locally, or from within the docker container, we 
 Exit the docker container if you haven't already. You'll need to copy one of the example projects from the docker container to your host machine. We recommend doing this by running the following:
 
 ```bash
-docker cp argus-image:/argus/examples/hello-server /tmp/
+docker cp argus-image:/artifact/argus/examples/hello-server /tmp/hello-server
 ```
 
 The above copied the `hello-server` project to `/tmp` on your host machine. Change into this project and open VSCode by running:
@@ -96,11 +98,11 @@ The above copied the `hello-server` project to `/tmp` on your host machine. Chan
 code /tmp/hello-server
 ```
 
-Search for "Argus" in the extensions panel, and click install --- the current version is `v0.1.15`.
+Search for "Argus" in the extensions panel, and click install --- the current version is `v0.1.15`. *If you find yourself using Nix or trying to install Argus from source, you're diverging from the normal installation procedure.*
 
 Open the `src/main.rs` file and the extension should install. We have an [online tutorial](https://cel.cs.brown.edu/argus/) for debugging the `hello-server` example if you'd like to follow along.
 
-> The tutorial is also available within the docker container. You'll have to launch the container again (see [Getting Started](#getting-started)), then run the command: `open-tutorial`. Navigate to [`localhost:8888`](https://localhost:8888) to read the tutorial.
+> The tutorial is also available within the docker container. You'll have to launch the container again (see [Getting Started](#getting-started)), then run the command: `open-tutorial`. Navigate to <http://localhost:8888> to read the tutorial.
 
 ### IDE Evaluation (Within Docker)
 
@@ -126,4 +128,4 @@ open-workspace
 
 You can follow along with our online tutorial to see Argus in action: [online tutorial](https://cel.cs.brown.edu/argus/).
 
-> The tutorial is also available within the docker container. You'll have to launch the container again (see [Getting Started](#getting-started)), then run the command: `open-tutorial`. Navigate to [`localhost:8888`](https://localhost:8888) to read the tutorial.
+> The tutorial is also available within the docker container. You'll have to launch the container again (see [Getting Started](#getting-started)), then run the command: `open-tutorial`. Navigate to <http://localhost:8888> to read the tutorial.

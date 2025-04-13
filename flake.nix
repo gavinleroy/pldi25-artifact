@@ -6,11 +6,11 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=b8a38d64dd1b4d2758389aee52f008ead3a15c71";
+      "github:cognitive-engineering-lab/argus?rev=705ed33ce5bf1af38b275270008609f6e65def89";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
+    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ] (system:
       let
         overlays = [ (import rust-overlay) nix-vscode-extensions.overlays.default ];
         pkgs = import nixpkgs { inherit system overlays; };
@@ -18,6 +18,7 @@
         arch-names = {
           "x86_64-linux" = "amd64";
           "aarch64-linux" = "aarch64";
+          "aarch64-darwin" = "MacArm";
         };
 
         argus-original = argus.packages.${system};
@@ -35,6 +36,22 @@
         host = "0.0.0.0";
         port = "8888";
 
+        browsers = pkgs.playwright-driver.browsers.override {
+          withFirefox = false;
+          withWebkit = false;
+          withFfmpeg = false;
+        };
+
+        browser-cfg = {
+          "aarch64-linux" = "chrome-linux";
+          "aarch64-darwin" = "chrome-mac"; 
+          "x86_64-linux" = self."aarch64-linux";
+          "x86_64-darwin" = self."aarch64-darwin";
+        };
+        chromium-version = browser-cfg.${system};
+        chromium-subpath = "chromium-1134/${chromium-version}";
+        chromium-exe = "${browsers}/${chromium-subpath}/chrome";
+          
         dockerEnv = [
           argus-cli
           codium-with-argus
@@ -44,25 +61,29 @@
           open-workspace
           open-tutorial
           toolchain
+          browsers
 
-          pkgs.chromium
           pkgs.julia-bin
           pkgs.gcc
           pkgs.pkg-config
           pkgs.coreutils
           pkgs.cacert
           pkgs.bashInteractive
-          pkgs.alsa-lib.dev
-          pkgs.udev.dev
           pkgs.http-server
           pkgs.nodejs_22
+        ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+          pkgs.alsa-lib.dev
+          pkgs.udev.dev
+        ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+          pkgs.playwright-driver.browsers
         ];
 
         app-dir-name = "artifact";
         app-dir = "/${app-dir-name}";
 
         run-evaluation = pkgs.writeScriptBin "run-evaluation" ''
-          cd ${app-dir}/argus && ARGUS_DNF_PERF= RUST_LOG=off cargo test -p argus-cli && cd -
+          export RUST_LOG=off
+          cd ${app-dir}/argus && ARGUS_DNF_PERF= cargo test -p argus-cli && cd -
 
           node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
           node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
@@ -71,7 +92,8 @@
           mkdir -p ${app-dir}/evaluation/data/gen
           mv ${app-dir}/argus/crates/argus-cli/*.csv ${app-dir}/evaluation/data/gen/
           mv ${app-dir}/*.csv ${app-dir}/evaluation/data/gen/
-          # NOTE the compiler data was hand-tuned an compared between
+
+          # NOTE the compiler data was hand-tuned and compared between
           # authors, but Julia will expect it to be present in the `gen` directory as well.
           cp ${app-dir}/evaluation/data/heuristic-precision\[rust\].csv ${app-dir}/evaluation/data/gen/
         '';
@@ -110,20 +132,21 @@
               fi
           done
           echo "Wrapper: Executing '$ORIGINAL_BINARY' with args: ''${modified_args[@]}" >&2
-          exec ${pkgs.chromium}/bin/chromium "''${modified_args[@]}"
+          exec ${chromium-exe} "''${modified_args[@]}"
         '';
 
-        # NOTE the chromium-1134 is very specific to the version of playwright being used
-        # but we do this to avoid installing all of playwright, which includes firefox and webkit.
         browsers-dir = "${app-dir}/.playwright-browsers";
-        chromium-linux-dir = "${browsers-dir}/chromium-1134/chrome-linux";
+        chromium-dir = "${browsers-dir}/${chromium-subpath}";
+        symlink-browser-wrapper = ''
+          mkdir -p ${chromium-dir}
+          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-dir}/chrome
+          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-dir}/chromium
+          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-dir}/chromium-browser
+        '';
+
         on-startup = pkgs.writeScriptBin "on-startup" ''
           cp ${argus-cli}/lib/bindings.ts ${app-dir}/argus/ide/packages/common/src/
-          mkdir -p ${chromium-linux-dir}
-          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-linux-dir}/chromium
-          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-linux-dir}/chrome
-          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-linux-dir}/chromium-browser
-
+          ${symlink-browser-wrapper}
           cd ${app-dir}
           "${pkgs.bashInteractive}/bin/bash"
         '';
@@ -179,7 +202,6 @@
               "PKG_CONFIG_PATH=${pkgs.udev.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig"
               "LIBERTINE_PATH=${pkgs.libertine}/share/fonts"
               "PLAYWRIGHT_BROWSERS_PATH=${browsers-dir}"
-              #"PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}"
               "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
             ];
             ExposedPorts."${port}/tcp" = {};
@@ -187,5 +209,20 @@
         };
       in {
         packages.default = dockerImage;
+
+        devShell = pkgs.mkShell ({
+          buildInputs = dockerEnv;
+          shellHook = symlink-browser-wrapper;
+
+          HOST="${host}";
+          PORT="${port}";
+          CARGO_TARGET_DIR="/tmp";
+          RUSTFLAGS="-L /lib";
+          LIBERTINE_PATH="${pkgs.libertine}/share/fonts";
+          SSL_CERT_FILE="${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+          PLAYWRIGHT_BROWSERS_PATH="${browsers-dir}";
+        } // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+          PKG_CONFIG_PATH="${pkgs.udev.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig";
+        });
       });
 }

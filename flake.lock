@@ -8,17 +8,17 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1744516832,
-        "narHash": "sha256-tn5Mn0K2n7yOgu4FcvweT2GeTbEo8ABVDzjqQ+ZThsM=",
+        "lastModified": 1744556907,
+        "narHash": "sha256-W534KqADI7i0lf8WsNSz8WKflGHMA+d8b5SaYftgyhQ=",
         "owner": "cognitive-engineering-lab",
         "repo": "argus",
-        "rev": "b8a38d64dd1b4d2758389aee52f008ead3a15c71",
+        "rev": "705ed33ce5bf1af38b275270008609f6e65def89",
         "type": "github"
       },
       "original": {
         "owner": "cognitive-engineering-lab",
         "repo": "argus",
-        "rev": "b8a38d64dd1b4d2758389aee52f008ead3a15c71",
+        "rev": "705ed33ce5bf1af38b275270008609f6e65def89",
         "type": "github"
       }
     },
