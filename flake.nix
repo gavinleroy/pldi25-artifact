@@ -6,7 +6,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     nix-vscode-extensions.url = "github:nix-community/nix-vscode-extensions";
     argus.url = 
-      "github:cognitive-engineering-lab/argus?rev=2cb5898ee5fb13621e73a49456cb2a9770ca2a82";
+      "github:cognitive-engineering-lab/argus?rev=b8a38d64dd1b4d2758389aee52f008ead3a15c71";
   };
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, nix-vscode-extensions, argus }:
@@ -20,32 +20,22 @@
           "aarch64-linux" = "aarch64";
         };
 
-        supported-images = {
-          "x86_64-linux" = {
-            imageName = "ubuntu";
-            imageDigest = "sha256:33d782143e3a76315de8570db1673fda6d5b17c854190b74e9e890d8e95c85cf";
-            sha256 = "sha256-KGFXuZ6HCvbVMA7CIkn4HrmSq5RYaETO4ziEkWTQiK0=";
-            finalImageTag = "22.04";
-            finalImageName = "ubuntu";
-          };
-
-          "aarch64-linux" = {
-            imageName = "ubuntu";
-            imageDigest = "sha256:23fdb0648173966ac0b863e5b3d63032e99f44533c5b396e62f29770ca2c5210";
-            sha256 = "sha256-XEa6epttG3nv7fL89dHELcGXtIDY+b6tF6F3w2iWg1Y=";
-            finalImageTag = "22.04";
-            finalImageName = "ubuntu";
-          };
-        };
-
         argus-original = argus.packages.${system};
         inherit (argus-original) argus-cli argus-book argus-ide argus-extension;
         toolchain = pkgs.rust-bin.fromRustupToolchainFile "${argus}/rust-toolchain.toml";
 
+        codium-with-argus = pkgs.vscode-with-extensions.override {
+          vscode = pkgs.vscodium;
+          vscodeExtensions = [
+            pkgs.open-vsx-release.rust-lang.rust-analyzer
+            argus-extension
+          ];
+        };
+
         host = "0.0.0.0";
         port = "8888";
 
-        dockerEnv = with pkgs; [
+        dockerEnv = [
           argus-cli
           codium-with-argus
           on-startup
@@ -53,33 +43,37 @@
           open-evaluation
           open-workspace
           open-tutorial
-          julia-bin
-          #pkg-config
-          #coreutils
-          #binutils
-          #gnused
-          cacert
-          #gcc
-          bashInteractive
-          alsa-lib.dev
-          udev.dev
           toolchain
-          nodejs_22
+
+          pkgs.chromium
+          pkgs.julia-bin
+          pkgs.gcc
+          pkgs.pkg-config
+          pkgs.coreutils
+          pkgs.cacert
+          pkgs.bashInteractive
+          pkgs.alsa-lib.dev
+          pkgs.udev.dev
+          pkgs.http-server
+          pkgs.nodejs_22
         ];
 
+        app-dir-name = "artifact";
+        app-dir = "/${app-dir-name}";
+
         run-evaluation = pkgs.writeScriptBin "run-evaluation" ''
-          cd argus && ARGUS_DNF_PERF=  cargo test -p argus-cli && cd -
+          cd ${app-dir}/argus && ARGUS_DNF_PERF= RUST_LOG=off cargo test -p argus-cli && cd -
 
           node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=inertia &&
           node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=vars &&
           node ${argus-ide}/packages/evaluation/dist/evaluation.cjs -h --rankBy=depth &&
 
-          mkdir -p evaluation/data/gen
-          mv argus/crates/argus-cli/*.csv evaluation/data/gen/
-          mv *.csv evaluation/data/gen/
+          mkdir -p ${app-dir}/evaluation/data/gen
+          mv ${app-dir}/argus/crates/argus-cli/*.csv ${app-dir}/evaluation/data/gen/
+          mv ${app-dir}/*.csv ${app-dir}/evaluation/data/gen/
           # NOTE the compiler data was hand-tuned an compared between
           # authors, but Julia will expect it to be present in the `gen` directory as well.
-          cp evaluation/data/heuristic-precision\[rust\].csv evaluation/data/gen/
+          cp ${app-dir}/evaluation/data/heuristic-precision\[rust\].csv ${app-dir}/evaluation/data/gen/
         '';
 
         open-evaluation = pkgs.writeScriptBin "open-evaluation" ''
@@ -98,23 +92,41 @@
         '';
 
         open-tutorial = pkgs.writeScriptBin "open-tutorial" ''
-          cd ${argus-book}
-          ${pkgs.python3}/bin/python3 -m http.server ${port}
-          cd -
+          ${pkgs.http-server}/bin/http-server ${argus-book} -p ${port}
         '';
 
         open-workspace = pkgs.writeScriptBin "open-workspace" ''
-          mkdir -p ~/root
-          codium --no-sandbox --user-data-dir=~/root argus/examples/hello-server/src/main.rs argus/examples/hello-server
+          mkdir -p ${app-dir}/.root
+          ${codium-with-argus}/bin/codium --no-sandbox --user-data-dir=${app-dir}/.root argus/examples/hello-server/src/main.rs argus/examples/hello-server
         '';
 
-        codium-with-argus = pkgs.vscode-with-extensions.override {
-          vscode = pkgs.vscodium;
-          vscodeExtensions = [
-            pkgs.open-vsx-release.rust-lang.rust-analyzer
-            argus-extension
-          ];
-        };
+        chromium-wrapper = pkgs.writeScriptBin "nohd-wrap" '' 
+          modified_args=()
+          for arg in "$@"; do
+              if [ "$arg" == "--headless=old" ]; then
+                  modified_args+=("--headless=new")
+              else
+                  modified_args+=("$arg")
+              fi
+          done
+          echo "Wrapper: Executing '$ORIGINAL_BINARY' with args: ''${modified_args[@]}" >&2
+          exec ${pkgs.chromium}/bin/chromium "''${modified_args[@]}"
+        '';
+
+        # NOTE the chromium-1134 is very specific to the version of playwright being used
+        # but we do this to avoid installing all of playwright, which includes firefox and webkit.
+        browsers-dir = "${app-dir}/.playwright-browsers";
+        chromium-linux-dir = "${browsers-dir}/chromium-1134/chrome-linux";
+        on-startup = pkgs.writeScriptBin "on-startup" ''
+          cp ${argus-cli}/lib/bindings.ts ${app-dir}/argus/ide/packages/common/src/
+          mkdir -p ${chromium-linux-dir}
+          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-linux-dir}/chromium
+          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-linux-dir}/chrome
+          ln -s ${chromium-wrapper}/bin/nohd-wrap ${chromium-linux-dir}/chromium-browser
+
+          cd ${app-dir}
+          "${pkgs.bashInteractive}/bin/bash"
+        '';
 
         study-source = pkgs.fetchFromGitHub {
           owner = "gavinleroy";
@@ -130,16 +142,10 @@
           hash = "sha256-CtYpYQjDTXaxoopA9NP/UyM45H6jSIjAX2PrvfY9NMs=";
         };
 
-        on-startup = pkgs.writeScriptBin "on-startup" ''
-          #!/bin/bash
-          cp ${argus-cli}/lib/bindings.ts argus/ide/packages/common/src/
-          /bin/bash
-        '';
-
         dockerImage = pkgs.dockerTools.buildLayeredImage {
           name = "gavinleroy/pldi25-argus-${arch-names.${system}}";
           tag = "latest";
-          fromImage = pkgs.dockerTools.pullImage (supported-images.${system});
+          #fromImage = pkgs.dockerTools.pullImage (supported-images.${system});
 
           contents = pkgs.buildEnv {
             name = "image-root";
@@ -147,12 +153,13 @@
           };
 
           extraCommands = ''
-            mkdir -p argus
-            mkdir -p argus-study
-            mkdir -p evaluation
-            cp -R ${argus}/* argus/
-            cp -R ${study-source}/* argus-study/
-            cp -R ${evaluation-source}/evaluation evaluation
+            mkdir -p ${app-dir-name}
+            mkdir -p ${app-dir-name}/argus
+            mkdir -p ${app-dir-name}/argus-study
+            mkdir -p ${app-dir-name}/evaluation
+            cp -R ${argus}/* ${app-dir-name}/argus/
+            cp -R ${study-source}/* ${app-dir-name}/argus-study/
+            cp -R ${evaluation-source}/evaluation ${app-dir-name}/
           '';
 
           config = {
@@ -162,18 +169,18 @@
               "${on-startup}/bin/on-startup"
             ];
             WorkingDir = "/";
-            Env = with pkgs; [ 
+            Env = [ 
               "DISPLAY=:0"
               "HOST=${host}"
               "PORT=${port}"
-              "PATH=${lib.makeBinPath dockerEnv}:${argus}/scripts:/argus/scripts:/argus/ide/node_modules/.bin" 
-              "LD_LIBRARY_PATH=${lib.makeLibraryPath dockerEnv}"
               "CARGO_TARGET_DIR=/tmp"
-              "PKG_CONFIG_PATH=${udev.dev}/lib/pkgconfig:${alsa-lib.dev}/lib/pkgconfig"
-              "PYTHON=${python3}"
-              "LIBERTINE_PATH=${libertine}/share/fonts"
-              "PLAYWRIGHT_BROWSERS_PATH=${playwright-chromium.browsers}"
-              "SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt"
+              "RUSTFLAGS=-L /lib"
+              "LD_LIBRARY_PATH=/lib"
+              "PKG_CONFIG_PATH=${pkgs.udev.dev}/lib/pkgconfig:${pkgs.alsa-lib.dev}/lib/pkgconfig"
+              "LIBERTINE_PATH=${pkgs.libertine}/share/fonts"
+              "PLAYWRIGHT_BROWSERS_PATH=${browsers-dir}"
+              #"PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}"
+              "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
             ];
             ExposedPorts."${port}/tcp" = {};
           };
