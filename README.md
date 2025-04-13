@@ -48,9 +48,17 @@ docker run --name argus-image -p 8888:8888 -it gavinleroy/pldi25-argus-<ARCH>
 
 ## Tool Evaluation
 
+To verify that the Argus CLI is properly installed and working, you can enter one of our example projects:
+
+```bash
+cd argus/examples/hello-server
+```
+
+then, if you run `cargo argus obligations` a large JSON blob will be printed to the console. Navigate back to the artifact root `cd /artifact` to continue.
+
 This step will verify that the code artifacts *build* and *run*. The below command will compile and run the tool on the included example workspaces; these are the same workspaces used to gather data for Figure 11 (Section 5.2.2) in the paper. The data gathered in this step will be piped into the analysis notebook, which you will look at in the [next step](#analysis-evaluation).
 
-> :warning: stderr will have many lines that start with `MISSING` or `ERROR`, but if the process exits with status `0` then there were no actual errors --- it's just a chatty script.
+> :warning: stderr will have lines that start with `MISSING` or `ERROR`, but if the process exits with status `0` then there were no actual errors --- it's just a chatty script.
 
 Run the following:
 
