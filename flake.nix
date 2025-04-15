@@ -167,7 +167,6 @@
         dockerImage = pkgs.dockerTools.buildLayeredImage {
           name = "gavinleroy/pldi25-argus-${arch-names.${system}}";
           tag = "latest";
-          #fromImage = pkgs.dockerTools.pullImage (supported-images.${system});
 
           contents = pkgs.buildEnv {
             name = "image-root";
@@ -179,7 +178,8 @@
             mkdir -p ${app-dir-name}/argus
             mkdir -p ${app-dir-name}/argus-study
             mkdir -p ${app-dir-name}/evaluation
-            cp ${./README.md} ${app-dir-name}/README.md
+            cp ${./LICENSE} ${app-dir-name}/
+            cp ${./README.md} ${app-dir-name}/
             cp -R ${argus}/* ${app-dir-name}/argus/
             cp -R ${study-source}/* ${app-dir-name}/argus-study/
             cp -R ${evaluation-source}/evaluation ${app-dir-name}/
