@@ -1,8 +1,0 @@
-[package]
-name = "greenhouse-dev-1"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-brew = { version = "0.1.0", path = "../brew" }
-brew-macros = { version = "0.1.0", path = "../brew-macros" }

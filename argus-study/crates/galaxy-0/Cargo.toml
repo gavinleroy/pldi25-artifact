@@ -1,8 +1,0 @@
-[package]
-name = "galaxy-0"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-space = { version = "0.1.0", path = "../space" }
-space-macros = { version = "0.1.0", path = "../space-macros" }

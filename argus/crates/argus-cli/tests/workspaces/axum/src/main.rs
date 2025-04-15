@@ -1,3 +1,0 @@
-mod tests;
-
-fn main() {}

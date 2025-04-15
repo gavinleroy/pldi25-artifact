@@ -1,5 +1,4 @@
 {
-#eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI3MDc5ZDQzZC01N2E3LTQ1NzQtYWE2NS00Nzc5MjhkNDkwZTciLCJzY29wZXMiOiJjYWNoZSJ9.neEzdaB5TYRMIVTPidSPGW50cWGlkaNMlmXEiLaAN_c
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/80a3e9ca766a82fcec24648ab3a771d5dd8f9bf2";
     flake-utils.url = "github:numtide/flake-utils";

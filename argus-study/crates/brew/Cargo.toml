@@ -1,8 +1,0 @@
-[package]
-name = "brew"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-numerical-macros = { path = "../numerical-macros", version = "0.1.0" }
-brew-macros = { path = "../brew-macros", version = "0.1.0" }

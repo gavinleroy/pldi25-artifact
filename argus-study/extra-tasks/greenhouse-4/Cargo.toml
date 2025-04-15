@@ -1,8 +1,0 @@
-[package]
-name = "greenhouse-4"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-brew = { version = "0.1.0", path = "../brew" }
-rayon = "1.10.0"
