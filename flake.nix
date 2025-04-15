@@ -108,7 +108,7 @@
             end
 
             using Pluto
-            Pluto.run(notebook="./evaluation/notebook.jl"; host="${host}", port=${port})
+            Pluto.run(notebook="${app-dir}/evaluation/notebook.jl"; host="${host}", port=${port})
           '
         '';
 
@@ -178,8 +178,8 @@
             mkdir -p ${app-dir-name}/argus
             mkdir -p ${app-dir-name}/argus-study
             mkdir -p ${app-dir-name}/evaluation
-            cp ${./LICENSE} ${app-dir-name}/
-            cp ${./README.md} ${app-dir-name}/
+            cp ${./LICENSE} ${app-dir-name}/LICENSE
+            cp ${./README.md} ${app-dir-name}/README.md
             cp -R ${argus}/* ${app-dir-name}/argus/
             cp -R ${study-source}/* ${app-dir-name}/argus-study/
             cp -R ${evaluation-source}/evaluation ${app-dir-name}/
